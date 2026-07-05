@@ -105,6 +105,10 @@ const piece = (mesh, color, ...ops) =>
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const easeOut = (v) => 1 - Math.pow(1 - clamp01(v), 3);
+const easeInOut = (v) => {
+  v = clamp01(v);
+  return v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
+};
 const window01 = (u, from, len) => clamp01((u - from) / len);
 
 /* ---- the scenes ---- */
@@ -261,6 +265,168 @@ export const TOYS = {
         at(CYL, COLOR.red, 10, 2),
         at(ORANGE, COLOR.orange, 50, 3),
         at(PLANK60, COLOR.blue, 100, 4),
+      ];
+    },
+  },
+
+  /* ---- and from here on it escalates ---- */
+
+  /* a stadium wave rolling across a 5×5 field of cubes */
+  wavefield: {
+    dur: 5, ext: { r: 95, z: 55 },
+    scene: (u) => {
+      const out = [];
+      for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+        const z = 10 + 9 * Math.sin(u * Math.PI * 2 - (i + j) * 0.55);
+        out.push(piece(CUBE, (i + j) % 2 ? COLOR.lightblue : COLOR.blue,
+          T((i - 2) * 34, (j - 2) * 34, z)));
+      }
+      return out;
+    },
+  },
+
+  /* a pendulum wave: planks and pins ticking at stepped frequencies,
+   * drifting out of phase and snapping back once per loop */
+  pendulum: {
+    dur: 12, ext: { r: 100, z: 70 },
+    scene: (u) => {
+      const out = [];
+      for (let i = 0; i < 7; i++) {
+        const a = 0.3 * Math.sin(u * Math.PI * 2 * (2 + i));
+        const [mesh, color] = i % 2 ? [CYL, COLOR.red] : [UPRIGHT60, COLOR.blue];
+        out.push(piece(mesh, color, RX(a), T((i - 3) * 26, 0, 0)));
+      }
+      return out;
+    },
+  },
+
+  /* a ring of dominoes forever knocking each other down */
+  dominoes: {
+    dur: 6, ext: { r: 95, z: 65 },
+    scene: (u) => {
+      const N = 10, R = 62;
+      return Array.from({ length: N }, (_, i) => {
+        const th = (i / N) * Math.PI * 2;
+        const p = ((u - i / N) % 1 + 1) % 1;
+        let a = 0;
+        if (p < 0.12) a = 1.05 * Math.pow(p / 0.12, 2);
+        else if (p < 0.5) a = 1.05;
+        else if (p < 0.7) a = 1.05 * (1 - easeInOut((p - 0.5) / 0.2));
+        return piece(UPRIGHT60, COLOR.blue,
+          T(-7.5, 0, 0), RY(a), T(7.5, 0, 0),
+          RZ(th + Math.PI / 2), T(R * Math.cos(th), R * Math.sin(th), 0));
+      });
+    },
+  },
+
+  /* sun, planet, moon: nested orbits in whole-number time */
+  orrery: {
+    dur: 10, ext: { r: 130, z: 80 },
+    scene: (u) => {
+      const a = u * Math.PI * 2;
+      const px = 55 * Math.cos(a), py = 55 * Math.sin(a);
+      const m = a * 5;
+      return [
+        piece(CYL, COLOR.red),
+        piece(ORANGE, COLOR.orange, RZ(a), T(px, py, 8)),
+        piece(CUBE, COLOR.lightblue, S(0.55, 0.55, 0.55), RZ(m),
+          T(px + 34 * Math.cos(m), py + 34 * Math.sin(m), 14)),
+        piece(PLANK60, COLOR.blue, RZ(a * 2 + Math.PI / 2),
+          T(100 * Math.cos(a * 2), 100 * Math.sin(a * 2), 8)),
+      ];
+    },
+  },
+
+  /* the impossible staircase: steps sink as they turn, so the cube
+   * climbs forever and gets nowhere */
+  escher: {
+    dur: 8, ext: { r: 78, z: 150 },
+    scene: (u) => {
+      const g = u * 8; // eight steps per loop, seamless treadmill
+      const out = [piece(CYL, COLOR.red, S(1, 1, 2.1))];
+      for (let k = Math.floor(g) - 1; k < Math.floor(g) + 10; k++) {
+        const d = k - g;
+        const th = d * (Math.PI / 4);
+        const z = 14 * d + 14;
+        const alpha = clamp01((d + 1.4) / 1.2) * clamp01((8.6 - d) / 1.2);
+        if (alpha <= 0.01 || z < 0) continue;
+        out.push({
+          ...piece(PLANK60, COLOR.blue, RZ(th + Math.PI / 2),
+            T(40 * Math.cos(th), 40 * Math.sin(th), z)),
+          alpha,
+        });
+      }
+      const hop = 12 * Math.pow(Math.sin(Math.PI * (g % 1)), 2);
+      out.push(piece(CUBE, COLOR.lightblue, T(0, 40, 57 + hop)));
+      return out;
+    },
+  },
+
+  /* twelve pieces caught in a rising vortex */
+  tornado: {
+    dur: 6, ext: { r: 105, z: 150 },
+    scene: (u) => {
+      const kinds = [
+        [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange],
+        [PLANK60, COLOR.blue], [CYL, COLOR.red],
+      ];
+      const out = [];
+      for (let i = 0; i < 12; i++) {
+        const h = (u * 2 + i / 12) % 1;
+        const th = Math.PI * 2 * (u * 3 + i * 0.618);
+        const r = 18 + 60 * h;
+        const [mesh, color] = kinds[i % 4];
+        out.push({
+          ...piece(mesh, color, S(0.8, 0.8, 0.8),
+            RZ(Math.PI * 2 * (u * 4 + i / 3)),
+            T(r * Math.cos(th), r * Math.sin(th), 6 + h * 125)),
+          alpha: clamp01(Math.sin(Math.PI * h) * 1.8),
+        });
+      }
+      return out;
+    },
+  },
+
+  /* a juggling fountain: pieces arc across, then shuffle back in line */
+  fountain: {
+    dur: 5, ext: { r: 95, z: 130 },
+    scene: (u) => {
+      const kinds = [
+        [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange], [CYL, COLOR.red],
+        [PLANK60, COLOR.blue], [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange],
+      ];
+      return kinds.map(([mesh, color], i) => {
+        const p = (u + i / 6) % 1;
+        if (p < 0.65) {
+          const s = p / 0.65;
+          return piece(mesh, color, RY(Math.PI * 2 * s),
+            T(-65 + 130 * s, 0, 4 + 420 * s * (1 - s)));
+        }
+        const s = (p - 0.65) / 0.35;
+        return {
+          ...piece(mesh, color, T(65 - 130 * s, 0, 2)),
+          alpha: 0.35 + 0.65 * Math.max(clamp01(1 - s * 6), clamp01((s - 0.8) / 0.2)),
+        };
+      });
+    },
+  },
+
+  /* the tower detonates, scatters, and un-explodes back together */
+  bigbang: {
+    dur: 8, ext: { r: 110, z: 180 },
+    scene: (u) => {
+      const m = u > 0.5 ? 1 - u : u;                // palindrome
+      const q = easeInOut(window01(m, 0.08, 0.34)); // 0 tower → 1 scattered
+      const fly = (mesh, color, home, scatter, spins) => {
+        const p = home.map((v, k) => v + (scatter[k] - v) * q);
+        return piece(mesh, color, RZ(q * Math.PI * 2 * spins),
+          T(p[0], p[1], p[2] + 70 * Math.sin(Math.PI * q)));
+      };
+      return [
+        fly(PLANK75, COLOR.blue, [0, 0, 0], [-72, 28, 0], 1),
+        fly(CUBE, COLOR.lightblue, [0, 0, 15], [58, -30, 0], 2),
+        fly(ORANGE, COLOR.orange, [0, 0, 45], [34, 58, 0], 1),
+        fly(CYL, COLOR.red, [0, 0, 69], [-42, -56, 0], 2),
       ];
     },
   },

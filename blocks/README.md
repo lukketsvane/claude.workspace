@@ -5,9 +5,11 @@ in three materials:
 
 - **`toys.js`** — the klossete wooden set (see `models/BLOCKS.md`)
   animated as real isometric geometry: `<block-toys name="carousel">`.
-  Ten scenes: carousel, tower, seesaw, metronome, bounce, roll, flip,
-  stairs, train, family. No dependencies, no WebGL — a tiny canvas
-  renderer with painter-sorted faces, shading, and soft shadows.
+  Eighteen scenes in escalating order of mischief: carousel, tower,
+  seesaw, metronome, bounce, roll, flip, stairs, train, family,
+  wavefield, pendulum, dominoes, orrery, escher, tornado, fountain,
+  bigbang. No dependencies, no WebGL — a tiny canvas renderer with
+  painter-sorted faces, shading, and soft shadows.
 - **`blocks-gfx.js`** — the abstract density loops below rendered as
   flat pixels or voxel stacks: `<block-gfx name="sea" mode="3d">`.
 - **`blocks.js`** — the same loops as Unicode block glyphs
