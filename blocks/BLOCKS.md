@@ -19,6 +19,16 @@ Specs and colors match `lib/blocks.ts` in the klossete repo.
 - Red (cylinder): `#c83a2e` — rgb(200, 58, 46)
 - Orange (block): `#e07b22` — rgb(224, 123, 34)
 
+## Measured colors — NCS Colourpin scans of the physical blocks
+
+Real-world readings taken with an NCS Colourpin + NCS app (photos from bl.ok.k):
+
+- **Red Cylinder**: NCS **S 3060-Y90R** (NCS 1950, page 111 pos. 2), CIELAB (39, 45, 27) → sRGB ≈ `#a33633` / rgb(163, 54, 51)
+- **Blue (cube scan)**: CIELAB (40.2, −10.6, −29.0) → sRGB ≈ `#00668e` / rgb(0, 102, 142); nearest NCS matches **S 4050-R90B** and **S 3060-R90B** (both weak, 2/5-star matches — the physical paint sits between chips)
+
+The measured values are darker and less saturated than the in-game hexes above —
+the game colors are stylized, the scans are ground truth for the physical set.
+
 ## Notes
 
 - The orange block rests with the 24 mm dimension as its height (45 × 45 footprint).
