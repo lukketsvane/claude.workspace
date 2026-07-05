@@ -1,8 +1,20 @@
 # block loops
 
-Tiny looping animations drawn with Unicode block glyphs
-(`░ ▒ ▓ █ ▘ ▝ ▗ ▖ ▁▂▃▄▅▆▇`), made for the quiet, text-first
-aesthetic of [iverfinne.no](https://iverfinne.no).
+Tiny looping animations for [iverfinne.no](https://iverfinne.no),
+in three materials:
+
+- **`toys.js`** — the klossete wooden set (see `models/BLOCKS.md`)
+  animated as real isometric geometry: `<block-toys name="carousel">`.
+  Ten scenes: carousel, tower, seesaw, metronome, bounce, roll, flip,
+  stairs, train, family. No dependencies, no WebGL — a tiny canvas
+  renderer with painter-sorted faces, shading, and soft shadows.
+- **`blocks-gfx.js`** — the abstract density loops below rendered as
+  flat pixels or voxel stacks: `<block-gfx name="sea" mode="3d">`.
+- **`blocks.js`** — the same loops as Unicode block glyphs
+  (`░ ▒ ▓ █ ▘ ▝ ▗ ▖ ▁▂▃▄▅▆▇`): `<block-loop name="wave">`.
+
+`models/` holds the source GLB/USDZ assets and measured specs of the
+physical set.
 
 - **Zero dependencies** — one ES module, ~3 kB, no build step.
 - **Perfect loops** — every animation is deterministic with an integer

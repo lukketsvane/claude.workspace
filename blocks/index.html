@@ -37,7 +37,13 @@
   h1 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
   header p { color: var(--muted); margin: 0; max-width: 60ch; }
   .hero { display: block; margin: 28px 0 0; }
-  .bar { display: flex; align-items: center; justify-content: space-between; margin: 0 0 16px; }
+  h2 {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 40px 0 16px;
+  }
+  .bar { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 16px; }
+  .bar h2 { margin: 40px 0 0; }
   .modes { display: flex; border: 1px solid var(--hairline); }
   .modes button {
     font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
@@ -91,12 +97,17 @@
 <main>
   <header>
     <h1>block loops</h1>
-    <p>Tiny looping animations built from a grid of density cells, rendered
-       three ways: isometric voxels, flat pixels, or Unicode glyphs.
-       Same loops, three materials. Click a card to copy its tag.</p>
-    <block-gfx class="hero" name="sea" mode="3d" scale="13"></block-gfx>
+    <p>Tiny looping animations for iverfinne.no. The wooden set from klossete,
+       plus abstract density loops rendered as voxels, pixels, or glyphs.
+       Click a card to copy its tag.</p>
+    <block-toys class="hero" name="carousel" scale="0.8"></block-toys>
   </header>
+
+  <h2>klossane</h2>
+  <div class="grid" id="toys"></div>
+
   <div class="bar">
+    <h2>fields</h2>
     <div class="modes" role="group" aria-label="renderer">
       <button data-mode="3d" aria-pressed="true">3d</button>
       <button data-mode="2d" aria-pressed="false">2d</button>
@@ -108,9 +119,36 @@
 <script type="module">
   import { LOOPS } from "./blocks.js";
   import "./blocks-gfx.js";
+  import { TOYS } from "./toys.js";
 
   let mode = "3d";
-  const grid = document.getElementById("grid");
+  const fieldsGrid = document.getElementById("grid");
+
+  // klossane cards
+  const toysGrid = document.getElementById("toys");
+  for (const name of Object.keys(TOYS)) {
+    const toy = TOYS[name];
+    const tag = `<block-toys name="${name}"></block-toys>`;
+    const card = document.createElement("button");
+    card.className = "card";
+    card.innerHTML = `
+      <span class="stage"></span>
+      <span class="label">
+        <span class="name">${name}</span>
+        <span class="meta">${toy.scene(0).length === 1 ? "1 piece" : toy.scene(0).length + " pieces"} · ${toy.dur}s</span>
+      </span>
+      <span class="snippet"></span>`;
+    const el = document.createElement("block-toys");
+    el.setAttribute("name", name);
+    card.querySelector(".stage").append(el);
+    card.querySelector(".snippet").textContent = tag;
+    card.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(tag); } catch {}
+      card.classList.add("copied");
+      setTimeout(() => card.classList.remove("copied"), 800);
+    });
+    toysGrid.append(card);
+  }
 
   const tagFor = (name) => mode === "glyph"
     ? `<block-loop name="${name}"></block-loop>`
@@ -144,7 +182,7 @@
       card.classList.add("copied");
       setTimeout(() => card.classList.remove("copied"), 800);
     });
-    grid.append(card);
+    fieldsGrid.append(card);
     cards.push({ name, card });
   }
 
