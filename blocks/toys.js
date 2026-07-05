@@ -12,6 +12,7 @@
  *
  * Attributes:
  *   name    a scene from TOYS (required)
+ *   mode    "3d" (default) or "2d" — flat face-on silhouettes
  *   scale   px per mm (default 0.55)
  *   title   accessible label
  *
@@ -537,6 +538,101 @@ export const TOYS = {
     },
   },
 
+  /* a little house assembling itself: walls, door, lintel, roof */
+  hus: {
+    dur: 7, ext: { r: 55, z: 175 },
+    scene: (u) => {
+      const tau = u < 0.5 ? u * 2 : (1 - u) * 2; // palindrome
+      const drop = (mk, slot) => {
+        const p = easeOut(window01(tau, slot * 0.13, 0.2));
+        return mk(175 * (1 - p));
+      };
+      return [
+        drop((dz) => piece(UPRIGHT60, COLOR.blue, T(-22, 0, dz)), 0),
+        drop((dz) => piece(UPRIGHT60, COLOR.blue, T(22, 0, dz)), 1),
+        drop((dz) => piece(CUBE, COLOR.lightblue, T(0, 0, dz)), 2),
+        drop((dz) => piece(PLANK75, COLOR.blue, T(0, 0, 60 + dz)), 3),
+        drop((dz) => piece(ORANGE, COLOR.orange, RY(Math.PI / 4), T(0, 0, 91 + dz)), 4),
+      ];
+    },
+  },
+
+  /* a bricklayer's wall going up in running bond, then coming down */
+  mur: {
+    dur: 8, ext: { r: 80, z: 170 },
+    scene: (u) => {
+      const tau = u < 0.5 ? u * 2 : (1 - u) * 2;
+      const lay = (mesh, color, x, z, slot) => {
+        const p = easeOut(window01(tau, slot * 0.11, 0.18));
+        return piece(mesh, color, T(x, 0, z + (165 - z) * (1 - p)));
+      };
+      return [
+        lay(PLANK75, COLOR.blue, -30, 0, 0),
+        lay(PLANK60, COLOR.blue, 40, 0, 1),
+        lay(PLANK60, COLOR.blue, -38, 15, 2),
+        lay(PLANK75, COLOR.blue, 30, 15, 3),
+        lay(ORANGE, COLOR.orange, -15, 30, 4),
+        lay(CUBE, COLOR.lightblue, 35, 30, 5),
+      ];
+    },
+  },
+
+  /* a wall clock: the minute hand laps the hour hand twelve to one */
+  klokke: {
+    dur: 24, ext: { r: 55, z: 150 },
+    scene: (u) => {
+      const hand = (mesh, pivot, y, revs) =>
+        piece(mesh, COLOR.blue, T(pivot, 0, -7.5),
+          RY(Math.PI * 2 * revs * u), T(0, y, 90));
+      return [
+        piece(CYL, COLOR.red, RX(Math.PI / 2), T(0, 30, 90)), // face-on pin
+        hand(PLANK60, 22, -20, 1),   // hour
+        hand(PLANK75, 30, -38, 12),  // minute
+      ];
+    },
+  },
+
+  /* a ferris wheel: crossed spokes, gondolas hanging level */
+  ferris: {
+    dur: 10, ext: { r: 58, z: 150 },
+    scene: (u) => {
+      const a = u * Math.PI * 2;
+      const out = [
+        piece(CYL, COLOR.red, T(0, 18, 0)),
+        piece(CYL, COLOR.red, T(0, 18, 60)),
+        piece(CUBE, COLOR.lightblue, T(0, 0, 90)),
+        piece(PLANK75, COLOR.blue, T(0, 0, -7.5), RY(a), T(0, 0, 105)),
+        piece(PLANK75, COLOR.blue, T(0, 0, -7.5), RY(a + Math.PI / 2), T(0, 0, 105)),
+      ];
+      for (let k = 0; k < 4; k++) {
+        const phi = a + k * (Math.PI / 2);
+        out.push(piece(CUBE, k % 2 ? COLOR.orange : COLOR.lightblue,
+          T(37.5 * Math.cos(phi), 0, 105 - 37.5 * Math.sin(phi) - 34)));
+      }
+      return out;
+    },
+  },
+
+  /* a three-cube cascade, thrown and caught forever */
+  sjonglering: {
+    dur: 3.6, ext: { r: 55, z: 135 },
+    scene: (u) => {
+      const path = (t) => {
+        if (t < 0.38) { const s = t / 0.38; return [-38 + 76 * s, 22 + 380 * s * (1 - s)]; }
+        if (t < 0.5) { const s = (t - 0.38) / 0.12; return [38 - 6 * Math.sin(Math.PI * s), 22 - 6 * Math.sin(Math.PI * s)]; }
+        if (t < 0.88) { const s = (t - 0.5) / 0.38; return [38 - 76 * s, 22 + 380 * s * (1 - s)]; }
+        const s = (t - 0.88) / 0.12;
+        return [-38 + 6 * Math.sin(Math.PI * s), 22 - 6 * Math.sin(Math.PI * s)];
+      };
+      const colors = [COLOR.lightblue, COLOR.orange, COLOR.lightblue];
+      return colors.map((c, i) => {
+        const t = (u + i / 3) % 1;
+        const [x, z] = path(t);
+        return piece(i === 1 ? ORANGE : CUBE, c, RY(Math.PI * 2 * 2 * t), T(x, 0, z - (i === 1 ? 12 : 15)));
+      });
+    },
+  },
+
   /* the tower detonates, scatters, and un-explodes back together */
   bigbang: {
     dur: 8, ext: { r: 110, z: 180 },
@@ -704,6 +800,72 @@ export function drawScene(ctx, name, u, scale, inkShadow) {
   ctx.globalAlpha = 1;
 }
 
+/* ---- 2d: the same scenes face-on, as flat silhouettes ---- */
+
+export function bounds2d(ext, scale) {
+  const pad = 6;
+  return {
+    w: ext.r * 2 * scale + pad * 2,
+    h: ext.z * scale + pad * 2 + 5,
+    ox: ext.r * scale + pad,
+    oy: ext.z * scale + pad,
+  };
+}
+
+export function drawScene2d(ctx, name, u, scale, inkShadow) {
+  const toy = TOYS[name];
+  const pieces = toy.scene(u);
+  const b = bounds2d(toy.ext, scale);
+  const px = (v) => [b.ox + v[0] * scale, b.oy - v[2] * scale];
+
+  const solid = pieces.map((p) => {
+    const faces = p.mesh.map((f) => f.map((v) => apply(p.xf, v)));
+    let ySum = 0, count = 0, minX = Infinity, maxX = -Infinity, minZ = Infinity;
+    for (const f of faces) for (const v of f) {
+      ySum += v[1]; count++;
+      minX = Math.min(minX, v[0]); maxX = Math.max(maxX, v[0]);
+      minZ = Math.min(minZ, v[2]);
+    }
+    return { ...p, faces, y: ySum / count, minX, maxX, minZ };
+  }).sort((a, b2) => b2.y - a.y); // camera at -y: draw the far side first
+
+  // ground shadow bars, nudged sunward and fading with altitude
+  ctx.fillStyle = inkShadow;
+  for (const p of solid) {
+    ctx.globalAlpha = 0.18 * (p.alpha ?? 1) * clamp01(1 - p.minZ / 140);
+    const [x0] = px([p.minX, 0, 0]);
+    const [x1] = px([p.maxX, 0, 0]);
+    const off = p.minZ * 0.12 * scale;
+    ctx.fillRect(x0 + off, b.oy + 1, x1 - x0, 3);
+  }
+  ctx.globalAlpha = 1;
+
+  // flat silhouettes in the set's own colors
+  for (const p of solid) {
+    ctx.globalAlpha = p.alpha ?? 1;
+    const path = new Path2D();
+    for (const f of p.faces) {
+      const pts = f.map(px);
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+        area += x1 * y2 - x2 * y1;
+      }
+      const poly = area < 0 ? [...pts].reverse() : pts;
+      path.moveTo(poly[0][0], poly[0][1]);
+      for (let i = 1; i < poly.length; i++) path.lineTo(poly[i][0], poly[i][1]);
+      path.closePath();
+    }
+    ctx.fillStyle = p.color;
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 0.7;
+    ctx.lineJoin = "round";
+    ctx.fill(path);
+    ctx.stroke(path);
+  }
+  ctx.globalAlpha = 1;
+}
+
 /* ---- custom element ---- */
 
 if (typeof HTMLElement !== "undefined") {
@@ -711,6 +873,7 @@ if (typeof HTMLElement !== "undefined") {
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
 
 class BlockToys extends HTMLElement {
+  static observedAttributes = ["mode", "name", "scale"];
   #raf = null;
   #io = null;
   #visible = true;
@@ -747,13 +910,22 @@ class BlockToys extends HTMLElement {
     this.#io && this.#io.disconnect();
   }
 
+  attributeChangedCallback() {
+    if (!this.#canvas) return;
+    this.#layout();
+    this.#frame();
+  }
+
+  get #mode() { return this.getAttribute("mode") === "2d" ? "2d" : "3d"; }
+
   get #scale() {
     const s = Number(this.getAttribute("scale"));
     return s > 0 ? s : 0.55;
   }
 
   #layout() {
-    const { w, h } = bounds(TOYS[this.getAttribute("name")].ext, this.#scale);
+    const bfn = this.#mode === "2d" ? bounds2d : bounds;
+    const { w, h } = bfn(TOYS[this.getAttribute("name")].ext, this.#scale);
     const dpr = window.devicePixelRatio || 1;
     this.#canvas.width = Math.ceil(w * dpr);
     this.#canvas.height = Math.ceil(h * dpr);
@@ -772,7 +944,8 @@ class BlockToys extends HTMLElement {
     this.#ctx.clearRect(0, 0, width, height);
     this.#ctx.restore();
     const ink = getComputedStyle(this).getPropertyValue("--ink").trim() || "#1a1d1b";
-    drawScene(this.#ctx, name, REDUCED.matches ? 0 : u, this.#scale, ink);
+    const draw = this.#mode === "2d" ? drawScene2d : drawScene;
+    draw(this.#ctx, name, REDUCED.matches ? 0 : u, this.#scale, ink);
   }
 
   #sync() {
