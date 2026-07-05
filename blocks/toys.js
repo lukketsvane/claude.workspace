@@ -3,7 +3,7 @@
  *
  * The five physical pieces (see models/BLOCKS.md) rendered as real
  * geometry on a canvas: a tiny orthographic-isometric engine with
- * painter-sorted faces, directional shading, and soft ground shadows.
+ * painter-sorted faces, sun-and-sky shading, and hard cast shadows.
  * No dependencies, no WebGL.
  *
  * Usage:
@@ -44,17 +44,20 @@ function box(w, d, h) {
   ];
 }
 
-function prism(r, h, n = 18) {
-  const b = [], t = [];
+function prism(r, h, n = 24) {
+  const b = [], t = [], nrm = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     b.push([r * Math.cos(a), r * Math.sin(a), 0]);
     t.push([r * Math.cos(a), r * Math.sin(a), h]);
+    nrm.push([Math.cos(a), Math.sin(a), 0]);
   }
   const faces = [];
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
-    faces.push([b[i], b[j], t[j], t[i]]);
+    const f = [b[i], b[j], t[j], t[i]];
+    f.gradN = [nrm[i], nrm[j]]; // smooth-shade the curved side
+    faces.push(f);
   }
   faces.push([...t]);            // top
   faces.push([...b].reverse());  // bottom
@@ -71,8 +74,9 @@ const ORANGE = box(45, 45, 24);
 /* ---- transforms: {r: 3x3, t: [x,y,z]} ---- */
 
 const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+/* Rigid transforms only — every piece keeps its true physical size,
+ * so normals transform with the same matrix as points. */
 const T = (x, y, z) => ({ r: I3, t: [x, y, z] });
-const S = (x, y, z) => ({ r: [[x, 0, 0], [0, y, 0], [0, 0, z]], t: [0, 0, 0] });
 const RX = (a) => ({ r: [[1, 0, 0], [0, Math.cos(a), -Math.sin(a)], [0, Math.sin(a), Math.cos(a)]], t: [0, 0, 0] });
 const RY = (a) => ({ r: [[Math.cos(a), 0, Math.sin(a)], [0, 1, 0], [-Math.sin(a), 0, Math.cos(a)]], t: [0, 0, 0] });
 const RZ = (a) => ({ r: [[Math.cos(a), -Math.sin(a), 0], [Math.sin(a), Math.cos(a), 0], [0, 0, 1]], t: [0, 0, 0] });
@@ -187,11 +191,10 @@ export const TOYS = {
     scene: (u) => {
       const h = Math.abs(Math.sin(u * Math.PI * 2)); // two bounces
       const z = 15 + 70 * h * h;
-      const squash = 1 - 0.22 * clamp01(1 - (z - 15) / 14);
-      const spread = 1 / Math.sqrt(squash);
+      // square footprint: a quarter turn per loop closes seamlessly
       return [
         piece(PLANK75, COLOR.blue),
-        piece(ORANGE, COLOR.orange, S(spread, spread, squash), T(0, 0, z)),
+        piece(ORANGE, COLOR.orange, RZ(u * Math.PI / 2), T(0, 0, z)),
       ];
     },
   },
@@ -329,8 +332,8 @@ export const TOYS = {
       return [
         piece(CYL, COLOR.red),
         piece(ORANGE, COLOR.orange, RZ(a), T(px, py, 8)),
-        piece(CUBE, COLOR.lightblue, S(0.55, 0.55, 0.55), RZ(m),
-          T(px + 34 * Math.cos(m), py + 34 * Math.sin(m), 14)),
+        piece(CUBE, COLOR.lightblue, RZ(m),
+          T(px + 42 * Math.cos(m), py + 42 * Math.sin(m), 12)),
         piece(PLANK60, COLOR.blue, RZ(a * 2 + Math.PI / 2),
           T(100 * Math.cos(a * 2), 100 * Math.sin(a * 2), 8)),
       ];
@@ -343,7 +346,7 @@ export const TOYS = {
     dur: 8, ext: { r: 78, z: 150 },
     scene: (u) => {
       const g = u * 8; // eight steps per loop, seamless treadmill
-      const out = [piece(CYL, COLOR.red, S(1, 1, 2.1))];
+      const out = [piece(CYL, COLOR.red), piece(CYL, COLOR.red, T(0, 0, 60))];
       for (let k = Math.floor(g) - 1; k < Math.floor(g) + 10; k++) {
         const d = k - g;
         const th = d * (Math.PI / 4);
@@ -364,7 +367,7 @@ export const TOYS = {
 
   /* twelve pieces caught in a rising vortex */
   tornado: {
-    dur: 6, ext: { r: 105, z: 150 },
+    dur: 6, ext: { r: 118, z: 160 },
     scene: (u) => {
       const kinds = [
         [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange],
@@ -377,7 +380,7 @@ export const TOYS = {
         const r = 18 + 60 * h;
         const [mesh, color] = kinds[i % 4];
         out.push({
-          ...piece(mesh, color, S(0.8, 0.8, 0.8),
+          ...piece(mesh, color,
             RZ(Math.PI * 2 * (u * 4 + i / 3)),
             T(r * Math.cos(th), r * Math.sin(th), 6 + h * 125)),
           alpha: clamp01(Math.sin(Math.PI * h) * 1.8),
@@ -400,7 +403,7 @@ export const TOYS = {
         if (p < 0.65) {
           const s = p / 0.65;
           return piece(mesh, color, RY(Math.PI * 2 * s),
-            T(-65 + 130 * s, 0, 4 + 420 * s * (1 - s)));
+            T(-65 + 130 * s, 0, 2 + 420 * s * (1 - s)));
         }
         const s = (p - 0.65) / 0.35;
         return {
@@ -408,6 +411,129 @@ export const TOYS = {
           alpha: 0.35 + 0.65 * Math.max(clamp01(1 - s * 6), clamp01((s - 0.8) / 0.2)),
         };
       });
+    },
+  },
+
+  /* five pins passing the impulse down the line, cradle-style */
+  newton: {
+    dur: 3, ext: { r: 100, z: 70 },
+    scene: (u) => {
+      const A = 0.5;
+      const aL = u < 0.5 ? A * Math.sin(Math.PI * (u * 2)) : 0;
+      const aR = u >= 0.5 ? A * Math.sin(Math.PI * ((u - 0.5) * 2)) : 0;
+      const out = [];
+      for (let i = 0; i < 5; i++) {
+        const x = (i - 2) * 31;
+        if (i === 0 && aL > 0) {
+          out.push(piece(CYL, COLOR.red, T(15, 0, 0), RY(-aL), T(x - 15, 0, 0)));
+        } else if (i === 4 && aR > 0) {
+          out.push(piece(CYL, COLOR.red, T(-15, 0, 0), RY(aR), T(x + 15, 0, 0)));
+        } else {
+          out.push(piece(CYL, COLOR.red, T(x, 0, 0)));
+        }
+      }
+      return out;
+    },
+  },
+
+  /* a ring of cubes inching forward one hop at a time */
+  caterpillar: {
+    dur: 6, ext: { r: 78, z: 50 },
+    scene: (u) => {
+      const N = 8, R = 55;
+      return Array.from({ length: N }, (_, i) => {
+        // each cube hops forward once per loop; the last hop lands
+        // just before the seam, so u=1 matches u=0 rotated one slot
+        const step = clamp01((u - i / N) / 0.12);
+        const th = (Math.PI * 2 / N) * (i + easeInOut(step));
+        const hop = 14 * Math.sin(Math.PI * step);
+        return piece(CUBE, i % 2 ? COLOR.lightblue : COLOR.blue,
+          RZ(th), T(R * Math.cos(th), R * Math.sin(th), hop));
+      });
+    },
+  },
+
+  /* the whole set marching around the ring, bobbing in step */
+  parade: {
+    dur: 8, ext: { r: 115, z: 45 },
+    scene: (u) => {
+      const kinds = [
+        [PLANK75, COLOR.blue], [CUBE, COLOR.lightblue], [CYL, COLOR.red],
+        [ORANGE, COLOR.orange], [PLANK60, COLOR.blue],
+      ];
+      return kinds.map(([mesh, color], i) => {
+        const th = Math.PI * 2 * (u + i / 5);
+        const hop = 6 * Math.abs(Math.sin(Math.PI * (u * 10 + i)));
+        return piece(mesh, color, RZ(th + Math.PI / 2),
+          T(75 * Math.cos(th), 75 * Math.sin(th), hop));
+      });
+    },
+  },
+
+  /* two planks crossed on a cylinder mast, turning in the wind */
+  windmill: {
+    dur: 6, ext: { r: 62, z: 170 },
+    scene: (u) => {
+      const a = u * Math.PI * 2;
+      const blade = (k) => piece(PLANK75, COLOR.blue,
+        T(0, 0, -7.5), RY(a + k * Math.PI / 2), T(0, -25, 125));
+      return [
+        piece(CYL, COLOR.red),
+        piece(CYL, COLOR.red, T(0, 0, 60)),
+        piece(CUBE, COLOR.lightblue, T(0, -25, 110)),
+        blade(0), blade(1),
+      ];
+    },
+  },
+
+  /* three spiral arms of cubes turning around a red core */
+  galaxy: {
+    dur: 10, ext: { r: 110, z: 55 },
+    scene: (u) => {
+      const out = [piece(CYL, COLOR.red)];
+      for (let k = 0; k < 3; k++) for (let i = 0; i < 5; i++) {
+        const th = Math.PI * 2 * u + k * (Math.PI * 2 / 3) + i * 0.45;
+        const r = 22 + i * 17;
+        out.push(piece(CUBE, i % 2 ? COLOR.lightblue : COLOR.blue, RZ(th),
+          T(r * Math.cos(th), r * Math.sin(th), 4 + 4 * Math.sin(Math.PI * 4 * u + i))));
+      }
+      return out;
+    },
+  },
+
+  /* the full stack swaying through a tremor and holding on */
+  quake: {
+    dur: 5, ext: { r: 65, z: 155 },
+    scene: (u) => {
+      const amp = 0.13 * Math.pow(Math.sin(Math.PI * u), 2);
+      const stack = [
+        [PLANK75, COLOR.blue, 0], [ORANGE, COLOR.orange, 15],
+        [CUBE, COLOR.lightblue, 39], [PLANK60, COLOR.blue, 69],
+        [CYL, COLOR.red, 84],
+      ];
+      return stack.map(([mesh, color, z], k) =>
+        piece(mesh, color, T(0, 0, z),
+          RY(amp * Math.sin(Math.PI * 2 * 3 * u - k * 0.5))));
+    },
+  },
+
+  /* a flock of blocks on tangled whole-number orbits */
+  swarm: {
+    dur: 12, ext: { r: 95, z: 135 },
+    scene: (u) => {
+      const out = [];
+      for (let i = 0; i < 12; i++) {
+        const f = (k) => 1 + ((i * 7 + k * 5) % 3); // frequencies 1–3
+        const ph = (k) => (i * 0.37 + k * 0.61) % 1;
+        const x = 70 * Math.sin(Math.PI * 2 * (f(0) * u + ph(0)));
+        const y = 70 * Math.sin(Math.PI * 2 * (f(1) * u + ph(1)));
+        const z = 55 + 42 * Math.sin(Math.PI * 2 * (f(2) * u + ph(2)));
+        const [mesh, color] = i % 4 === 3
+          ? [ORANGE, COLOR.orange] : [CUBE, COLOR.lightblue];
+        out.push(piece(mesh, color,
+          RZ(Math.PI * 2 * (u * f(0) + i / 5)), T(x, y, z)));
+      }
+      return out;
     },
   },
 
@@ -437,10 +563,12 @@ export const TOYS = {
 const K = Math.SQRT1_2;            // azimuth 45°
 const SIN_E = 0.5, COS_E = Math.sqrt(3) / 2; // elevation 30°
 const LIGHT = (() => {
-  const l = [-0.45, 0.3, 0.84];
+  const l = [-0.5, 0.35, 1.15];    // high sun from the back-left
   const n = Math.hypot(...l);
   return l.map((v) => v / n);
 })();
+const AMB = [0.42, 0.44, 0.50];    // cool sky fill
+const KEY = [0.62, 0.585, 0.52];   // warm sun
 
 const project = ([x, y, z]) => [(x - y) * K, (x + y) * K * SIN_E - z * COS_E];
 const nearness = ([x, y, z]) => (x + y) * K * COS_E + z * SIN_E;
@@ -452,13 +580,13 @@ function hexRgb(c) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function shadeColor(base, f) {
-  // f in [-1,1]: toward white when lit, toward black in shadow
-  const [r, g, b] = hexRgb(base);
-  const t = f > 0 ? f * 0.3 : f * 0.42;
-  const to = f > 0 ? 255 : 0;
-  const mixc = (v) => Math.round(v + (to - v) * Math.abs(t));
-  return `rgb(${mixc(r)},${mixc(g)},${mixc(b)})`;
+/* gamma-correct two-tone shading: cool sky ambient plus warm sun key */
+function shade(base, n) {
+  const lit = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+  return `rgb(${hexRgb(base).map((c, i) => {
+    const v = Math.pow(c / 255, 2.2) * (AMB[i] + KEY[i] * lit);
+    return Math.round(255 * Math.pow(Math.min(1, v), 1 / 2.2));
+  }).join(",")})`;
 }
 
 /* ---- renderer ---- */
@@ -468,6 +596,12 @@ export function bounds(ext, scale) {
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const z of [0, ext.z]) {
     pts.push(project([sx * ext.r, sy * ext.r, z]));
   }
+  // room for the hard shadows cast toward +x / -y
+  pts.push(project([
+    ext.r - ext.z * (LIGHT[0] / LIGHT[2]),
+    -ext.r - ext.z * (LIGHT[1] / LIGHT[2]),
+    0,
+  ]));
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const pad = 6;
   const minX = Math.min(...xs) * scale - pad, maxX = Math.max(...xs) * scale + pad;
@@ -480,28 +614,42 @@ export function drawScene(ctx, name, u, scale, inkShadow) {
   const pieces = toy.scene(u);
   const { ox, oy } = bounds(toy.ext, scale);
   const px = ([x, y]) => [ox + x * scale, oy + y * scale];
+  const spx = (v) => px(project(v));
 
-  // world-space faces per piece
+  // world-space faces per piece (rigid transforms, so normals rotate too)
   const solid = pieces.map((p) => {
-    const faces = p.mesh.map((f) => f.map((v) => apply(p.xf, v)));
+    const faces = p.mesh.map((f) => {
+      const nf = f.map((v) => apply(p.xf, v));
+      if (f.gradN) nf.gradN = f.gradN.map((nv) => mulV(p.xf.r, nv));
+      return nf;
+    });
     const verts = faces.flat();
-    let cx = 0, cy = 0, minZ = Infinity, near = 0;
-    for (const v of verts) { cx += v[0]; cy += v[1]; minZ = Math.min(minZ, v[2]); near += nearness(v); }
-    cx /= verts.length; cy /= verts.length;
-    let rad = 0;
-    for (const v of verts) rad = Math.max(rad, Math.hypot(v[0] - cx, v[1] - cy));
-    return { ...p, faces, cx, cy, minZ, rad, near: near / verts.length };
+    let near = 0;
+    for (const v of verts) near += nearness(v);
+    return { ...p, faces, near: near / verts.length };
   }).sort((a, b) => a.near - b.near);
 
-  // soft shadows first
+  // hard sun shadows: project the geometry to the ground along the light
+  ctx.fillStyle = inkShadow;
   for (const p of solid) {
-    const a = (p.alpha ?? 1) * Math.max(0.03, 0.13 * (1 - p.minZ / 160));
-    const [sx, sy] = px(project([p.cx, p.cy, 0]));
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, p.rad * 0.82 * scale, p.rad * 0.82 * scale * SIN_E, 0, 0, Math.PI * 2);
-    ctx.fillStyle = inkShadow;
-    ctx.globalAlpha = a;
-    ctx.fill();
+    const path = new Path2D();
+    for (const f of p.faces) {
+      const pts = f.map((v) => {
+        const t = v[2] / LIGHT[2];
+        return px(project([v[0] - LIGHT[0] * t, v[1] - LIGHT[1] * t, 0]));
+      });
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+        area += x1 * y2 - x2 * y1;
+      }
+      const poly = area < 0 ? [...pts].reverse() : pts; // uniform winding
+      path.moveTo(poly[0][0], poly[0][1]);
+      for (let i = 1; i < poly.length; i++) path.lineTo(poly[i][0], poly[i][1]);
+      path.closePath();
+    }
+    ctx.globalAlpha = 0.2 * (p.alpha ?? 1);
+    ctx.fill(path);
   }
   ctx.globalAlpha = 1;
 
@@ -528,13 +676,22 @@ export function drawScene(ctx, name, u, scale, inkShadow) {
     }
     drawable.sort((a, b) => a.near - b.near);
     for (const { f, n } of drawable) {
-      const lit = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
-      const fill = shadeColor(p.color, lit);
+      const pts = f.map(spx);
+      let fill = null;
+      if (f.gradN) {
+        // smooth-shade curved sides across the facet
+        const m0 = [(pts[0][0] + pts[3][0]) / 2, (pts[0][1] + pts[3][1]) / 2];
+        const m1 = [(pts[1][0] + pts[2][0]) / 2, (pts[1][1] + pts[2][1]) / 2];
+        if (Math.hypot(m1[0] - m0[0], m1[1] - m0[1]) > 0.5) {
+          const g = ctx.createLinearGradient(m0[0], m0[1], m1[0], m1[1]);
+          g.addColorStop(0, shade(p.color, f.gradN[0]));
+          g.addColorStop(1, shade(p.color, f.gradN[1]));
+          fill = g;
+        }
+      }
+      if (!fill) fill = shade(p.color, n);
       ctx.beginPath();
-      f.forEach((v, i) => {
-        const [x, y] = px(project(v));
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      });
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
       ctx.closePath();
       ctx.fillStyle = fill;
       ctx.strokeStyle = fill; // hairline overdraw hides AA seams
