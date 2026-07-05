@@ -103,12 +103,18 @@
     <block-toys class="hero" name="tornado" scale="0.75"></block-toys>
   </header>
 
-  <h2>klossane</h2>
+  <div class="bar">
+    <h2>klossane</h2>
+    <div class="modes" role="group" aria-label="dimension" id="toymodes">
+      <button data-mode="3d" aria-pressed="true">3d</button>
+      <button data-mode="2d" aria-pressed="false">2d</button>
+    </div>
+  </div>
   <div class="grid" id="toys"></div>
 
   <div class="bar">
     <h2>fields</h2>
-    <div class="modes" role="group" aria-label="renderer">
+    <div class="modes" role="group" aria-label="renderer" id="fieldmodes">
       <button data-mode="3d" aria-pressed="true">3d</button>
       <button data-mode="2d" aria-pressed="false">2d</button>
       <button data-mode="glyph" aria-pressed="false">glyph</button>
@@ -124,11 +130,16 @@
   let mode = "3d";
   const fieldsGrid = document.getElementById("grid");
 
-  // klossane cards
+  // klossane cards, with their own 3d / 2d toggle
+  let toyMode = "3d";
+  const toyTag = (name) => toyMode === "2d"
+    ? `<block-toys name="${name}" mode="2d"></block-toys>`
+    : `<block-toys name="${name}"></block-toys>`;
+
   const toysGrid = document.getElementById("toys");
+  const toyCards = [];
   for (const name of Object.keys(TOYS)) {
     const toy = TOYS[name];
-    const tag = `<block-toys name="${name}"></block-toys>`;
     const card = document.createElement("button");
     card.className = "card";
     card.innerHTML = `
@@ -138,17 +149,31 @@
         <span class="meta">${toy.scene(0).length === 1 ? "1 piece" : toy.scene(0).length + " pieces"} · ${toy.dur}s</span>
       </span>
       <span class="snippet"></span>`;
-    const el = document.createElement("block-toys");
-    el.setAttribute("name", name);
-    card.querySelector(".stage").append(el);
-    card.querySelector(".snippet").textContent = tag;
     card.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(tag); } catch {}
+      try { await navigator.clipboard.writeText(toyTag(name)); } catch {}
       card.classList.add("copied");
       setTimeout(() => card.classList.remove("copied"), 800);
     });
     toysGrid.append(card);
+    toyCards.push({ name, card });
   }
+
+  function renderToys() {
+    for (const { name, card } of toyCards) {
+      const el = document.createElement("block-toys");
+      el.setAttribute("name", name);
+      if (toyMode === "2d") el.setAttribute("mode", "2d");
+      card.querySelector(".stage").replaceChildren(el);
+      card.querySelector(".snippet").textContent = toyTag(name);
+    }
+    for (const b of document.querySelectorAll("#toymodes button")) {
+      b.setAttribute("aria-pressed", String(b.dataset.mode === toyMode));
+    }
+  }
+  for (const b of document.querySelectorAll("#toymodes button")) {
+    b.addEventListener("click", () => { toyMode = b.dataset.mode; renderToys(); });
+  }
+  renderToys();
 
   const tagFor = (name) => mode === "glyph"
     ? `<block-loop name="${name}"></block-loop>`
@@ -191,12 +216,12 @@
       card.querySelector(".stage").replaceChildren(stageFor(name));
       card.querySelector(".snippet").textContent = tagFor(name);
     }
-    for (const b of document.querySelectorAll(".modes button")) {
+    for (const b of document.querySelectorAll("#fieldmodes button")) {
       b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
     }
   }
 
-  for (const b of document.querySelectorAll(".modes button")) {
+  for (const b of document.querySelectorAll("#fieldmodes button")) {
     b.addEventListener("click", () => { mode = b.dataset.mode; render(); });
   }
   render();
