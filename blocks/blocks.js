@@ -17,8 +17,8 @@
  *   title  accessible label (defaults to the loop name)
  */
 
-const SHADE = " ░▒▓█";          // density ramp
-const BAR = "▁▂▃▄▅▆▇█";        // vertical eighths
+export const SHADE = " ░▒▓█";   // density ramp
+export const BAR = "▁▂▃▄▅▆▇█"; // vertical eighths
 const TAU = Math.PI * 2;
 
 /* deterministic hash → [0,1), so "random" loops still close */
@@ -45,13 +45,13 @@ export const LOOPS = {
 
   /* quadrant spinner, clockwise */
   spin: {
-    fps: 8, period: 4,
+    fps: 8, period: 4, kind: "quad",
     frame: (t) => "▘▝▗▖"[t],
   },
 
   /* a ripple of density spreading from the centre */
   pulse: {
-    fps: 10, period: 8,
+    fps: 10, period: 8, kind: "shade",
     frame: (t) => {
       const level = t < 4 ? t + 1 : 8 - t; // 1 2 3 4 3 2 1 0
       return grid(7, 1, (x) => SHADE[Math.max(0, level - Math.abs(x - 3))]);
@@ -60,16 +60,26 @@ export const LOOPS = {
 
   /* a sine wave travelling left */
   wave: {
-    fps: 12, period: 24,
+    fps: 12, period: 24, kind: "bar",
     frame: (t) => grid(12, 1, (x) => {
       const s = Math.sin(x * 0.7 - (t / 24) * TAU);
       return BAR[Math.round((s + 1) / 2 * 7)];
     }),
   },
 
+
+  /* a swell rolling diagonally across a field */
+  sea: {
+    fps: 12, period: 24, kind: "shade",
+    frame: (t) => grid(8, 5, (x, y) => {
+      const s = Math.sin(x * 0.8 + y * 0.55 - (t / 24) * TAU);
+      return SHADE[Math.round((s + 1) / 2 * 4)];
+    }),
+  },
+
   /* a solid block sweeping back and forth over static */
   scan: {
-    fps: 12, period: 18,
+    fps: 12, period: 18, kind: "shade",
     frame: (t) => {
       const pos = t < 10 ? t : 18 - t; // bounce 0..9..1
       return grid(10, 1, (x) => (x === pos ? "█" : "░"));
@@ -78,7 +88,7 @@ export const LOOPS = {
 
   /* staggered columns of falling density */
   rain: {
-    fps: 10, period: 9,
+    fps: 10, period: 9, kind: "shade",
     frame: (t) => grid(8, 5, (x, y) => {
       const head = (t + Math.floor(hash(x, 0, 0) * 9)) % 9;
       const d = head - y;
@@ -88,7 +98,7 @@ export const LOOPS = {
 
   /* dithered shimmer, like static on a quiet channel */
   noise: {
-    fps: 6, period: 8,
+    fps: 6, period: 8, kind: "shade",
     frame: (t) => grid(8, 4, (x, y) => {
       const v = hash(x, y, t);
       return v < 0.55 ? " " : v < 0.75 ? "░" : v < 0.9 ? "▒" : "▓";
@@ -97,7 +107,7 @@ export const LOOPS = {
 
   /* a snake of density running the perimeter of a frame */
   crawl: {
-    fps: 12, period: 20,
+    fps: 12, period: 20, kind: "shade",
     frame: (t) => {
       const W = 8, H = 4, P = 2 * W + 2 * (H - 2); // 20 perimeter cells
       const index = (x, y) => {
@@ -117,7 +127,7 @@ export const LOOPS = {
 
   /* seven bars breathing out of phase */
   eq: {
-    fps: 12, period: 24,
+    fps: 12, period: 24, kind: "bar",
     frame: (t) => {
       const H = 4;
       const level = (b) => {
@@ -134,7 +144,7 @@ export const LOOPS = {
 
   /* half-block weave flipping parity */
   checker: {
-    fps: 2, period: 2,
+    fps: 2, period: 2, kind: "half",
     frame: (t) => grid(8, 2, (x, y) => ((x + y + t) % 2 ? "▀" : "▄")),
   },
 };
