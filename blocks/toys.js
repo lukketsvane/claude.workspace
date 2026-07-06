@@ -3,7 +3,8 @@
  *
  * The five physical pieces (see models/BLOCKS.md) rendered as real
  * geometry on a canvas: a tiny orthographic-isometric engine with
- * painter-sorted faces, sun-and-sky shading, and hard cast shadows.
+ * painter-sorted faces, pure directional sunlight (no ambient),
+ * and hard cast shadows.
  * No dependencies, no WebGL.
  *
  * Usage:
@@ -762,12 +763,11 @@ export const TOYS = {
 const K = Math.SQRT1_2;            // azimuth 45°
 const SIN_E = 0.5, COS_E = Math.sqrt(3) / 2; // elevation 30°
 const LIGHT = (() => {
-  const l = [-0.5, 0.35, 1.15];    // high sun from the back-left
+  const l = [0.45, 0.25, 1.05];    // hard sun from the front-upper-right
   const n = Math.hypot(...l);
   return l.map((v) => v / n);
 })();
-const AMB = [0.42, 0.44, 0.50];    // cool sky fill
-const KEY = [0.62, 0.585, 0.52];   // warm sun
+const KEY = [1.16, 1.11, 1.04];    // slightly warm sun, tops read full
 
 const project = ([x, y, z]) => [(x - y) * K, (x + y) * K * SIN_E - z * COS_E];
 const nearness = ([x, y, z]) => (x + y) * K * COS_E + z * SIN_E;
@@ -779,11 +779,12 @@ function hexRgb(c) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-/* gamma-correct two-tone shading: cool sky ambient plus warm sun key */
+/* pure directional shading: gamma-correct Lambert, no ambient at all —
+ * faces turned from the sun fall to black */
 function shade(base, n) {
   const lit = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
   return `rgb(${hexRgb(base).map((c, i) => {
-    const v = Math.pow(c / 255, 2.2) * (AMB[i] + KEY[i] * lit);
+    const v = Math.pow(c / 255, 2.2) * KEY[i] * lit;
     return Math.round(255 * Math.pow(Math.min(1, v), 1 / 2.2));
   }).join(",")})`;
 }
@@ -795,12 +796,12 @@ export function bounds(ext, scale) {
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const z of [0, ext.z]) {
     pts.push(project([sx * ext.r, sy * ext.r, z]));
   }
-  // room for the hard shadows cast toward +x / -y
-  pts.push(project([
-    ext.r - ext.z * (LIGHT[0] / LIGHT[2]),
-    -ext.r - ext.z * (LIGHT[1] / LIGHT[2]),
-    0,
-  ]));
+  // room for the hard shadows, whichever way the sun casts them
+  const dx = -ext.z * (LIGHT[0] / LIGHT[2]);
+  const dy = -ext.z * (LIGHT[1] / LIGHT[2]);
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    pts.push(project([sx * ext.r + dx, sy * ext.r + dy, 0]));
+  }
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const pad = 6;
   const minX = Math.min(...xs) * scale - pad, maxX = Math.max(...xs) * scale + pad;
@@ -847,7 +848,7 @@ export function drawScene(ctx, name, u, scale, inkShadow) {
       for (let i = 1; i < poly.length; i++) path.lineTo(poly[i][0], poly[i][1]);
       path.closePath();
     }
-    ctx.globalAlpha = 0.2 * (p.alpha ?? 1);
+    ctx.globalAlpha = 0.42 * (p.alpha ?? 1);
     ctx.fill(path);
   }
   ctx.globalAlpha = 1;
@@ -935,10 +936,10 @@ export function drawScene2d(ctx, name, u, scale, inkShadow) {
   // ground shadow bars, nudged sunward and fading with altitude
   ctx.fillStyle = inkShadow;
   for (const p of solid) {
-    ctx.globalAlpha = 0.18 * (p.alpha ?? 1) * clamp01(1 - p.minZ / 140);
+    ctx.globalAlpha = 0.38 * (p.alpha ?? 1) * clamp01(1 - p.minZ / 140);
     const [x0] = px([p.minX, 0, 0]);
     const [x1] = px([p.maxX, 0, 0]);
-    const off = p.minZ * 0.12 * scale;
+    const off = -p.minZ * (LIGHT[0] / LIGHT[2]) * scale;
     ctx.fillRect(x0 + off, b.oy + 1, x1 - x0, 3);
   }
   ctx.globalAlpha = 1;
