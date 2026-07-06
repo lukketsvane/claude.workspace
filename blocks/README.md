@@ -5,11 +5,12 @@ in three materials:
 
 - **`toys.js`** — the klossete wooden set (see `models/BLOCKS.md`)
   animated as real isometric geometry: `<block-toys name="carousel">`.
-  Eighteen scenes in escalating order of mischief: carousel, tower,
-  seesaw, metronome, bounce, roll, flip, stairs, train, family,
-  wavefield, pendulum, dominoes, orrery, escher, tornado, fountain,
-  bigbang. No dependencies, no WebGL — a tiny canvas renderer with
-  painter-sorted faces, shading, and soft shadows.
+  Thirty-five scenes in escalating order of mischief, from carousel
+  and seesaw through escher, tornado, klokke, ferris, fyrverkeri and
+  bigbang — plus a flat 2d mode (`mode="2d"`) that renders the same
+  choreography face-on as silhouettes. No dependencies, no WebGL —
+  a tiny canvas renderer with painter-sorted faces, sun-and-sky
+  shading, and hard cast shadows.
 - **`blocks-gfx.js`** — the abstract density loops below rendered as
   flat pixels or voxel stacks: `<block-gfx name="sea" mode="3d">`.
 - **`blocks.js`** — the same loops as Unicode block glyphs
@@ -75,3 +76,10 @@ A loop is `{ fps, period, frame(t) }` where `frame` returns the same
 string shape for every `t` in `[0, period)`. Add one to `LOOPS` and it
 appears on the specimen sheet automatically. Keep `period` an integer
 and derive everything from `t` — that's what makes the loop close.
+
+## Exports
+
+`exports/` holds every loop pre-rendered as GIF and MP4
+(`toys-3d/`, `toys-2d/`, `fields-3d/`), regenerated with the
+Playwright + ffmpeg pipeline. Handy for embedding where you'd
+rather drop a file than run the element.

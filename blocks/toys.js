@@ -633,6 +633,109 @@ export const TOYS = {
     },
   },
 
+  /* a waterfall of cubes, splashing at the foot */
+  fossefall: {
+    dur: 4, ext: { r: 65, z: 160 },
+    scene: (u) => {
+      const out = [];
+      for (let c = 0; c < 3; c++) for (let j = 0; j < 3; j++) {
+        const p = (u * 2 + j / 3 + c * 0.17) % 1;
+        const alpha = Math.min(p / 0.12, (1 - p) / 0.12, 1);
+        out.push({
+          ...piece(CUBE, COLOR.lightblue, T((c - 1) * 32, 0, 145 * (1 - p))),
+          alpha: clamp01(alpha),
+        });
+      }
+      for (const s of [-1, 1]) {
+        const hop = 10 * Math.abs(Math.sin(Math.PI * (u * 6 + (s + 1) / 2)));
+        out.push(piece(CUBE, COLOR.lightblue, T(s * 48, 0, hop)));
+      }
+      return out;
+    },
+  },
+
+  /* the rolling square: a cube tumbling edge over edge down the planks */
+  tumle: {
+    dur: 4, ext: { r: 85, z: 75 },
+    scene: (u) => {
+      const t = u * 4, k = Math.floor(Math.min(t, 3.999)), s = t - k;
+      const th = (Math.PI / 2) * easeInOut(Math.min(1, s / 0.8));
+      const alpha = clamp01(Math.min(u / 0.1, (1 - u) / 0.1) * 1.5);
+      return [
+        piece(PLANK75, COLOR.blue, T(-37.5, 0, 0)),
+        piece(PLANK75, COLOR.blue, T(37.5, 0, 0)),
+        { ...piece(CUBE, COLOR.lightblue,
+          T(-15, 0, 0), RY(th), T(-45 + 30 * k, 0, 15)), alpha },
+      ];
+    },
+  },
+
+  /* the row doing the wave: a hop with a lean, passed down the line */
+  takt: {
+    dur: 4, ext: { r: 125, z: 60 },
+    scene: (u) => {
+      const kinds = [
+        [PLANK75, COLOR.blue, -85], [CUBE, COLOR.lightblue, -25],
+        [CYL, COLOR.red, 10], [ORANGE, COLOR.orange, 50], [PLANK60, COLOR.blue, 100],
+      ];
+      return kinds.map(([mesh, color, x], i) => {
+        const p = (u * 2 - i * 0.15 % 1 + 1) % 1;
+        const lift = Math.pow(Math.max(0, Math.sin(Math.PI * 2 * p)), 2);
+        return piece(mesh, color, RY(0.1 * Math.sin(Math.PI * 2 * p)),
+          T(x, 0, 12 * lift));
+      });
+    },
+  },
+
+  /* rola bola: the plank balancing on the rolling cylinder, cube riding */
+  balanse: {
+    dur: 5, ext: { r: 62, z: 80 },
+    scene: (u) => {
+      const x = 20 * Math.sin(u * Math.PI * 2);
+      const a = 0.3 * Math.sin(u * Math.PI * 2);
+      return [
+        piece(CYL, COLOR.red, RX(Math.PI / 2), T(x, 30, 15)),
+        piece(PLANK75, COLOR.blue, RY(a), T(-x * 0.5, 0, 30)),
+        piece(CUBE, COLOR.lightblue, T(24, 0, 15), RY(a), T(-x * 0.5, 0, 30)),
+      ];
+    },
+  },
+
+  /* a rocket goes up; six sparks come down */
+  fyrverkeri: {
+    dur: 5, ext: { r: 95, z: 205 },
+    scene: (u) => {
+      const out = [piece(ORANGE, COLOR.orange)]; // the mortar
+      const p1 = clamp01(u / 0.32);
+      const rocketAlpha = u < 0.32
+        ? clamp01(u / 0.04)
+        : clamp01(1 - (u - 0.32) / 0.06);
+      if (rocketAlpha > 0.01) {
+        out.push({
+          ...piece(CYL, COLOR.red, T(0, 0, 24 + 130 * easeOut(p1))),
+          alpha: rocketAlpha,
+        });
+      }
+      if (u > 0.32) {
+        const tb = clamp01((u - 0.32) / 0.45);
+        const e = easeOut(tb);
+        for (let k = 0; k < 6; k++) {
+          const phi = (k / 6) * Math.PI * 2;
+          const alpha = clamp01((1 - tb) * 1.2) * (tb < 1 ? 1 : 0);
+          if (alpha <= 0.01) continue;
+          out.push({
+            ...piece(CUBE, k % 2 ? COLOR.lightblue : COLOR.orange,
+              RZ(tb * Math.PI * 2),
+              T(Math.cos(phi) * 80 * e, 0,
+                184 + Math.sin(phi) * 60 * e - 95 * tb * tb)),
+            alpha,
+          });
+        }
+      }
+      return out;
+    },
+  },
+
   /* the tower detonates, scatters, and un-explodes back together */
   bigbang: {
     dur: 8, ext: { r: 110, z: 180 },
