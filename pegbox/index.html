@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pegbox</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pegbox">
+<meta name="theme-color" content="#f3f2ef">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%; overflow:hidden;
+    background:#f3f2ef;
+    -webkit-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
+    overscroll-behavior:none;
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  #c {
+    position:fixed; inset:0; width:100%; height:100%;
+    display:block; touch-action:none;
+  }
+  #vignette {
+    position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0) 55%, rgba(120,126,122,0.10) 100%);
+  }
+  #brand {
+    position:fixed; top:calc(env(safe-area-inset-top, 0px) + 16px);
+    left:0; right:0; text-align:center; pointer-events:none;
+    font-size:10px; letter-spacing:0.42em; text-indent:0.42em;
+    color:rgba(90,100,96,0.55); font-weight:600;
+  }
+  #ui {
+    position:fixed; left:0; right:0;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 18px);
+    display:flex; justify-content:center; align-items:center; gap:14px;
+    pointer-events:none;
+  }
+  .btn {
+    pointer-events:auto;
+    width:52px; height:52px; border-radius:50%;
+    border:1px solid rgba(90,100,96,0.16);
+    background:rgba(250,250,248,0.72);
+    -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    display:flex; align-items:center; justify-content:center;
+    color:#5c6662; cursor:pointer;
+    box-shadow:0 2px 12px rgba(70,80,76,0.10);
+    transition:transform .12s ease, background .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active { transform:scale(0.9); background:rgba(240,242,240,0.9); }
+  .btn.small { width:42px; height:42px; }
+  .btn svg { width:22px; height:22px; }
+  .btn.small svg { width:18px; height:18px; }
+  #panel {
+    position:fixed; left:50%; transform:translate(-50%, 8px);
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 84px);
+    width:min(320px, calc(100vw - 32px));
+    border-radius:20px;
+    border:1px solid rgba(90,100,96,0.14);
+    background:rgba(250,250,248,0.78);
+    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+    box-shadow:0 8px 30px rgba(70,80,76,0.12);
+    padding:16px 18px 12px;
+    opacity:0; pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  #panel.open { opacity:1; pointer-events:auto; transform:translate(-50%, 0); }
+  .row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .row label {
+    width:56px; flex:none; font-size:10px; letter-spacing:0.08em;
+    text-transform:uppercase; color:rgba(90,100,96,0.75); font-weight:600;
+  }
+  .row input[type=range] {
+    flex:1; -webkit-appearance:none; appearance:none; height:26px;
+    background:transparent; touch-action:pan-x;
+  }
+  .row input[type=range]::-webkit-slider-runnable-track {
+    height:2px; background:rgba(90,100,96,0.25); border-radius:1px;
+  }
+  .row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:#fbfbf9; border:1px solid rgba(90,100,96,0.3);
+    box-shadow:0 1px 4px rgba(70,80,76,0.2); margin-top:-8px;
+  }
+  #seed {
+    text-align:center; font-size:9px; letter-spacing:0.14em;
+    color:rgba(90,100,96,0.45); margin-top:4px; font-variant-numeric:tabular-nums;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="brand">PEGBOX</div>
+<div id="panel"><div id="sliders"></div><div id="seed"></div></div>
+<div id="ui">
+  <button class="btn small" id="tune" aria-label="Tune parameters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+      <line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.6" fill="rgba(250,250,248,1)"/>
+      <line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2.6" fill="rgba(250,250,248,1)"/>
+    </svg>
+  </button>
+  <button class="btn" id="shuffle" aria-label="New form">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12a8 8 0 0 1 13.6-5.7L20 8.5"/><polyline points="20 4 20 8.5 15.5 8.5"/>
+      <path d="M20 12a8 8 0 0 1-13.6 5.7L4 15.5"/><polyline points="4 20 4 15.5 8.5 15.5"/>
+    </svg>
+  </button>
+</div>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module" src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+</script>
+</body>
+</html>
