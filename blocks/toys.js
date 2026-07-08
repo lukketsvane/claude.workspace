@@ -1,17 +1,20 @@
 /*
  * toys.js — looping animations built from the klossete wooden block set.
  *
- * Three scenes, held to strict rules:
+ * Ten scenes, held to strict rules:
  *   - at most one instance of each of the five physical blocks
- *   - every motion is integrated real dynamics (rolling constraint,
- *     rigid-body rocking, ballistic flight) — no sine-wave fakery
+ *   - every motion is integrated real dynamics (rolling constraints,
+ *     rigid-body rocking, ballistic flight, torque-free tumbling,
+ *     steady precession) — no sine-wave fakery. The one exception is
+ *     `stopp`, which plays by stop-motion film rules instead: held
+ *     poses, each a physically stable structure.
  *   - exact contact geometry: pieces touch, they never interpenetrate
- *   - two directional lights (warm key + cool fill), no ambient,
- *     no environment — faces away from both lights fall to black,
- *     and each light casts its own hard shadow
+ *   - two directional lights (warm key + cool fill), no ambient, no
+ *     environment; the isometric camera throughout
  *
- * No dependencies, no WebGL: a tiny orthographic-isometric engine
- * with painter-sorted faces on a 2d canvas.
+ * This file owns the physics and a zero-dependency flat canvas
+ * renderer (painter-sorted faces). toys-gl.js renders the same
+ * scenes with the real textured GLB models in WebGL.
  *
  * Usage:
  *   <script type="module" src="/toys.js"></script>
@@ -262,6 +265,285 @@ const VUGGE = (() => {
 })();
 
 /* ================================================================
+ * kanon — the rocking canon
+ *
+ * All five blocks rock on their bottom edges — Housner's rocking
+ * block, integrated per piece — with amplitudes solved so their
+ * periods lock to 4, 5, 6, 7 and 8 cycles per loop. They start in
+ * step, drift into a travelling wave, and snap back together.
+ * ================================================================ */
+
+/* planar rocking block: half-width w, half-height h, I_cm/m about
+ * the rocking axis icm; pivots on the bottom edges at x = ±w.
+ * φ'' = -(gR/(icm+R²))·sin(β − φ), integrated in s = φ0 − φ */
+function rocker(w, h, icm, g) {
+  const R = Math.hypot(w, h);
+  const BETA = Math.atan2(w, h);
+  const IE = icm + R * R;
+  const quarter = (phi0) =>
+    rollout((s) => (g * R / IE) * Math.sin(BETA - phi0 + s), 0, phi0, 2e-4);
+  return { BETA, quarter };
+}
+
+/* the amplitude whose quarter-period hits tq (period grows with
+ * amplitude, diverging at β — so any target is reachable) */
+function amplitudeFor(rk, tq) {
+  let lo = rk.BETA * 0.02, hi = rk.BETA * 0.985;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (rk.quarter(mid).T < tq) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/* signed rocking tilt over one period from a falling-quarter table */
+function rockTilt(traj, phi0, p) {
+  const q = Math.floor(p * 4), t = (p * 4 - q) * traj.T;
+  const fall = (tt) => phi0 - at(traj, tt);
+  if (q === 0) return fall(t);
+  if (q === 1) return -fall(traj.T - t);
+  if (q === 2) return -fall(t);
+  return fall(traj.T - t);
+}
+
+const KANON = (() => {
+  const G = 560;   // toy gravity, mm/s²
+  const L = 6;     // loop length, s
+  // per piece: pivot half-width, half-height, I_cm/m in the rocking
+  // plane, cycles per loop (slow for the tall, quick for the flat)
+  const DEFS = [
+    { set: "plank75", w: 37.5, h: 7.5, icm: (75 * 75 + 15 * 15) / 12, k: 8, x: -88, y: -18 },
+    { set: "cube", w: 15, h: 15, icm: (30 * 30 + 30 * 30) / 12, k: 7, x: -44, y: 22 },
+    { set: "cyl", w: 15, h: 30, icm: (3 * 15 * 15 + 60 * 60) / 12, k: 4, x: 0, y: -20 },
+    { set: "orange", w: 22.5, h: 12, icm: (45 * 45 + 24 * 24) / 12, k: 6, x: 44, y: 24 },
+    { set: "upright60", w: 7.5, h: 30, icm: (15 * 15 + 60 * 60) / 12, k: 5, x: 88, y: -22 },
+  ];
+  return DEFS.map((d) => {
+    const rk = rocker(d.w, d.h, d.icm, G);
+    const phi0 = amplitudeFor(rk, L / (4 * d.k));
+    return { ...d, phi0, traj: rk.quarter(phi0) };
+  });
+})();
+
+/* ================================================================
+ * flaske — spin the bottle
+ *
+ * The red cylinder in steady precession, rolling on its rim without
+ * slipping: tilt θ and the contact circle stay fixed while the whole
+ * pattern turns at Ω. The no-slip constraint gives the spin
+ * ω_rel = −Ω·p/r, and the moment balance about the centre of mass
+ *   Ω·(I_a·s − I_t·Ω·cosθ)·sinθ = Ω²·(r·sinθ+h·cosθ)·(b+h·sinθ)·m
+ *                                  − m·g·(r·cosθ − h·sinθ)
+ * fixes Ω. The contact circle p = b + r·cosθ is chosen equal to r,
+ * so the net twist per precession is exactly −2π and even the wood
+ * grain loops seamlessly.
+ * ================================================================ */
+
+const FLASKE = (() => {
+  const G = 700;                     // toy gravity, mm/s²
+  const TH = 14 * Math.PI / 180;     // tilt of the axis
+  const R = 15, H = 60, HC = 30;     // radius, height, centre height
+  const IA = R * R / 2;              // I/m about the symmetry axis
+  const IT = (3 * R * R + H * H) / 12; // I/m transverse, about CoM
+  const S = Math.sin(TH), C = Math.cos(TH);
+  const B = R * (1 - C);             // base-centre offset: p = r exactly
+  const OM = Math.sqrt(
+    G * (R * C - HC * S) /
+    ((IA * B / R + IT * C) * S + (R * S + HC * C) * (B + HC * S)));
+  return { TH, R, B, S, OM, dur: 2 * Math.PI / OM };
+})();
+
+/* ================================================================
+ * fontene — the bouncing ensemble
+ *
+ * Three pieces in elastic ballistic bounce with periods locked
+ * 2:3:4 — the cylinder somersaults end over end, the cube does one
+ * full flip per hop, the orange block helicopters on a vertical
+ * axis. Constant angular velocity throughout (bounces are flat and
+ * exert no torque), so every landing is exactly flat.
+ * ================================================================ */
+
+const FONTENE = (() => {
+  const G = 900;   // toy gravity, mm/s²
+  const L = 1.8;   // loop length, s
+  // ballistic height above rest for k bounces per loop, phase f
+  const hop = (u, k, f) => {
+    const p = ((u + f) * k) % 1;
+    const T = L / k, t = p * T;
+    return (G * T / 2) * t - 0.5 * G * t * t;
+  };
+  return { G, L, hop };
+})();
+
+/* ================================================================
+ * kron — heads or tails
+ *
+ * The red cylinder flips end over end on the orange block: exact
+ * parabolic flight, half a turn of constant spin per flight, landing
+ * on the opposite face every time. One loop is two flights — one
+ * heads, one tails.
+ * ================================================================ */
+
+const KRON = (() => {
+  const G = 1400;                   // toy gravity, mm/s²
+  const TF = 0.55;                  // one flight, s
+  const Z0 = 24 + 30;               // resting centre height on the anvil
+  const zc = (t) => (G * TF / 2) * t - 0.5 * G * t * t;
+  return { G, TF, Z0, zc };
+})();
+
+/* ================================================================
+ * skru — the Dzhanibekov flip
+ *
+ * plank60's three moments of inertia all differ, and its somersault
+ * axis (the width) is the unstable intermediate one. Tossed with
+ * spin (ε, W, 0), it tumbles and half-twists — the Dzhanibekov
+ * effect, integrated from Euler's equations. ε was solved by
+ * shooting so that after one ω-period the net rotation about the
+ * angular-momentum axis is exactly zero: the plank lands flat, with
+ * its launch spin, and the loop is one true tumbling flight.
+ * ================================================================ */
+
+const SKRU = (() => {
+  const I = [93.75, 318.75, 375];  // I/m about length, width, thickness
+  const EPS = 2.09767710;          // the shooting root: α(ε) = 0
+  const W = 4 * Math.PI;           // somersault rate about the width axis
+  const P = 1.572320;              // one ω-period = one flight, s
+  const G = 520;                   // toy gravity, mm/s²
+
+  // integrate q̇ = ½q⊗ω, Iω̇ = (Iω)×ω over one flight (RK4)
+  const deriv = (s) => {
+    const [q0, q1, q2, q3, w1, w2, w3] = s;
+    return [
+      0.5 * (-q1 * w1 - q2 * w2 - q3 * w3),
+      0.5 * (q0 * w1 + q2 * w3 - q3 * w2),
+      0.5 * (q0 * w2 + q3 * w1 - q1 * w3),
+      0.5 * (q0 * w3 + q1 * w2 - q2 * w1),
+      (I[1] - I[2]) * w2 * w3 / I[0],
+      (I[2] - I[0]) * w3 * w1 / I[1],
+      (I[0] - I[1]) * w1 * w2 / I[2],
+    ];
+  };
+  const N = 4000, dt = P / N;
+  const quats = [];
+  let s = [1, 0, 0, 0, EPS, W, 0];
+  for (let i = 0; i <= N; i++) {
+    quats.push([s[0], s[1], s[2], s[3]]);
+    const k1 = deriv(s);
+    const k2 = deriv(s.map((v, j) => v + 0.5 * dt * k1[j]));
+    const k3 = deriv(s.map((v, j) => v + 0.5 * dt * k2[j]));
+    const k4 = deriv(s.map((v, j) => v + dt * k3[j]));
+    s = s.map((v, j) => v + (dt / 6) * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]));
+    const n = Math.hypot(s[0], s[1], s[2], s[3]);
+    for (let j = 0; j < 4; j++) s[j] /= n;
+  }
+
+  // orientation at flight fraction p, as a rigid transform
+  const orient = (p) => {
+    const [q0, q1, q2, q3] = quats[Math.round(Math.min(1, Math.max(0, p)) * N)];
+    return { r: [
+      [1 - 2 * (q2 * q2 + q3 * q3), 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)],
+      [2 * (q1 * q2 + q0 * q3), 1 - 2 * (q1 * q1 + q3 * q3), 2 * (q2 * q3 - q0 * q1)],
+      [2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), 1 - 2 * (q1 * q1 + q2 * q2)],
+    ], t: [0, 0, 0] };
+  };
+  const zf = (p) => {
+    const t = p * P;
+    return (G * P / 2) * t - 0.5 * G * t * t;
+  };
+  return { P, orient, zf };
+})();
+
+/* ================================================================
+ * piruett — the cube en pointe
+ *
+ * A cube's inertia tensor is isotropic, so it spins about ANY axis
+ * without wobble — and balanced on its corner with the body diagonal
+ * vertical, gravity passes through the contact point and exerts no
+ * torque. Steady rotation on the tip of the red column is an exact
+ * solution: the humblest block does a perfect pirouette.
+ * ================================================================ */
+
+const PIRUETT = (() => {
+  const DIAG = Math.atan(Math.SQRT2);        // 54.7356°: diagonal → vertical
+  const RAD = 15 * Math.sqrt(3);             // centre to corner
+  // rotation taking the body diagonal (1,1,1)/√3 to ẑ: rotate by
+  // −DIAG about the (1,−1,0)/√2 axis = RZ(−45°)·RY(−DIAG)·RZ(45°)
+  const UP = chain(RZ(-Math.PI / 4), RY(-DIAG), RZ(Math.PI / 4));
+  return { RAD, UP };
+})();
+
+/* ================================================================
+ * stopp — stop motion
+ *
+ * The one scene that plays by film rules instead of physics rules:
+ * the set rebuilds itself — tower, bridge, gate — one block moved
+ * per frame at 5 fps, hovering hand-held between placements the way
+ * stop-motion pieces do. Every *held* pose is a physically stable,
+ * exactly stacked structure.
+ * ================================================================ */
+
+const STOPP = (() => {
+  const FPS = 5;
+  // deck lean: resting on the cube pier's top edge (z=30) with its
+  // far end's bottom edge sitting flat on the orange pier (z=24)
+  const THB = Math.atan(6 / 53);
+  const upright = (x, y) => [RY(-Math.PI / 2), T(x + 7.5, y, 30)];
+  // three structures; every held pose is stable and exactly stacked
+  // each structure gets its own patch of floor, so half-built ones
+  // never share ground with what still stands
+  const TOWER = {
+    plank75: [T(0, 0, 0)],                                  // base
+    orange: [T(0, 0, 15)],                                  // 15..39
+    cube: [T(0, 0, 39)],                                    // 39..69
+    cyl: [T(0, 0, 69)],                                     // 69..129, spire
+    plank60: [T(-78, 40, 0)],                               // spare part
+  };
+  const BRIDGE = {
+    cube: [T(-38, -52, 0)],                                 // tall pier
+    orange: [T(44, -52, 0)],                                // short pier
+    plank75: [RY(THB), T(-7.26, -52, 28.22)],               // leaning deck
+    cyl: [T(-80, -6, 0)],                                   // standing by
+    plank60: [T(66, 6, 0)],                                 // lying by
+  };
+  const GATE = {
+    plank60: upright(-30, 52),                              // column, on end
+    cyl: [T(30, 52, 0)],                                    // column, 60 too
+    plank75: [T(0, 52, 60)],                                // level lintel
+    cube: [T(-4, -48, 0)],                                  // just walked through
+    orange: [T(58, -44, 0)],
+  };
+  const CONFIGS = [TOWER, BRIDGE, GATE];
+  // one block per frame, in construction order: bases before decks,
+  // spires last — every intermediate still-frame stands on its own
+  const ORDERS = [
+    ["cyl", "cube", "orange", "plank75", "plank60"],  // tower → bridge
+    ["plank60", "cyl", "plank75", "cube", "orange"],  // bridge → gate
+    ["plank75", "orange", "cube", "cyl", "plank60"],  // gate → tower
+  ];
+
+  // unfold into per-frame poses: hold each structure, then move one
+  // block per two frames (a hand-held hover, then the placement)
+  const frames = [];
+  const HOLD = 4;
+  for (let c = 0; c < CONFIGS.length; c++) {
+    const from = CONFIGS[c], to = CONFIGS[(c + 1) % CONFIGS.length];
+    for (let h = 0; h < HOLD; h++) frames.push({ ...from });
+    const pose = { ...from };
+    for (const b of ORDERS[c]) {
+      // hover: lifted and tipped between the two placements
+      const pa = chain(...from[b]).t, pb = chain(...to[b]).t;
+      pose[b] = [RY(0.14), T((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2,
+        Math.max(pa[2], pb[2]) + 66)];
+      frames.push({ ...pose });
+      pose[b] = to[b];
+      frames.push({ ...pose });
+    }
+  }
+  return { frames, dur: frames.length / FPS };
+})();
+
+/* ================================================================
  * sprett — the somersault
  *
  * The orange block bounces on the cube's top face: exact ballistic
@@ -326,6 +608,122 @@ export const TOYS = {
     },
   },
 
+  /* the whole family rocking in a phase canon */
+  kanon: {
+    dur: 6,
+    ext: { r: 136, z: 66 },
+    scene: (u) => KANON.map((d) => {
+      const phi = rockTilt(d.traj, d.phi0, (u * d.k) % 1);
+      const e = phi >= 0 ? d.w : -d.w;
+      return piece(SET[d.set], T(-e, 0, 0), RY(phi), T(e + d.x, d.y, 0));
+    }),
+  },
+
+  /* spin the bottle: the cylinder wobbling in steady precession */
+  flaske: {
+    dur: FLASKE.dur,
+    ext: { r: 108, z: 78 },
+    scene: (u) => {
+      const { TH, R, B, S } = FLASKE;
+      const psi = u * Math.PI * 2;
+      return [
+        // rolling without slipping: net twist −ψ, tilt θ, precession ψ
+        piece(SET.cyl, RZ(-psi), RY(TH), T(B, 0, R * S), RZ(psi)),
+        // the circle, waiting to see who it lands on
+        piece(SET.plank75, T(-6, 84, 0)),
+        piece(SET.cube, T(-82, -10, 0)),
+        piece(SET.orange, T(58, -60, 0)),
+        piece(SET.plank60, RZ(Math.PI / 2), T(84, 34, 0)),
+      ];
+    },
+  },
+
+  /* the bouncing ensemble, periods locked 2:3:4 */
+  fontene: {
+    dur: FONTENE.L,
+    ext: { r: 106, z: 130 },
+    scene: (u) => {
+      const { hop } = FONTENE;
+      return [
+        piece(SET.plank75),
+        // the cube drums on the plank: one somersault per hop, 3 hops
+        piece(SET.cube, T(0, 0, -15), RY(Math.PI * 2 * 3 * u),
+          T(0, 0, 30 + hop(u, 3, 0))),
+        // the cylinder's long end-over-end toss, 2 flights
+        piece(SET.cyl, T(0, 0, -30), RY(Math.PI * 2 * (u + 0.3)),
+          T(-62, 30, 30 + hop(u, 2, 0.3))),
+        // the orange helicopter, 4 quick hops
+        piece(SET.orange, T(0, 0, -12), RZ(Math.PI * 2 * u),
+          T(68, -34, 12 + hop(u, 4, 0.125))),
+        // one of us stays grounded
+        piece(SET.upright60, T(-20, -64, 0)),
+      ];
+    },
+  },
+
+  /* heads or tails, forever */
+  kron: {
+    dur: 2 * KRON.TF,
+    ext: { r: 96, z: 130 },
+    scene: (u) => {
+      const { TF, Z0, zc } = KRON;
+      const t = ((u * 2) % 1) * TF;
+      return [
+        piece(SET.orange),
+        // half a turn per flight: heads, then tails
+        piece(SET.cyl, T(0, 0, -30), RY(Math.PI * 2 * u), T(0, 0, Z0 + zc(t))),
+        // the bettors
+        piece(SET.plank75, T(-8, 66, 0)),
+        piece(SET.cube, T(44, -56, 0)),
+        piece(SET.upright60, T(-20, -72, 0)),
+      ];
+    },
+  },
+
+  /* the cube's perfect pirouette on the red column */
+  piruett: {
+    dur: 2.2,
+    ext: { r: 96, z: 118 },
+    scene: (u) => [
+      piece(SET.cyl),
+      // corner down, body diagonal vertical, steady spin: exact
+      piece(SET.cube, T(0, 0, -15), PIRUETT.UP, RZ(Math.PI * 2 * u),
+        T(0, 0, 60 + PIRUETT.RAD)),
+      // the corps de ballet
+      piece(SET.plank75, T(-12, 72, 0)),
+      piece(SET.plank60, T(74, -10, 0)),
+      piece(SET.orange, T(26, -68, 0)),
+    ],
+  },
+
+  /* stop motion: the set rebuilds itself, one block per frame */
+  stopp: {
+    dur: STOPP.dur,
+    ext: { r: 120, z: 200 },
+    scene: (u) => {
+      const f = STOPP.frames[
+        Math.min(STOPP.frames.length - 1, Math.floor(u * STOPP.frames.length))];
+      return ["plank75", "orange", "cube", "cyl", "plank60"]
+        .map((b) => piece(SET[b], ...f[b]));
+    },
+  },
+
+  /* the intermediate-axis theorem, live */
+  skru: {
+    dur: SKRU.P,
+    ext: { r: 96, z: 232 },
+    scene: (u) => [
+      piece(SET.orange),
+      // one exact tumbling flight: somersaults with sudden half-twists
+      piece(SET.plank60, T(0, 0, -7.5), SKRU.orient(u),
+        T(0, 0, 31.5 + SKRU.zf(u))),
+      // the witnesses keep their distance
+      piece(SET.plank75, T(-10, 70, 0)),
+      piece(SET.cube, T(20, -78, 0)),
+      piece(SET.cyl, T(58, -52, 0)),
+    ],
+  },
+
   /* the orange block's endless somersault on the cube */
   sprett: {
     dur: SPRETT.TF,
@@ -359,8 +757,8 @@ const norm3 = (v) => {
  * A warm key from the front upper right, a cool low fill from the
  * back left. Each casts its own hard shadow. */
 const LIGHTS = [
-  { dir: norm3([0.56, 0.28, 0.9]), rgb: [1.22, 1.08, 0.94], shadow: 0.4 },
-  { dir: norm3([-0.76, -0.3, 0.6]), rgb: [0.4, 0.5, 0.68], shadow: 0.15 },
+  { dir: norm3([0.48, 0.38, 0.85]), rgb: [1.22, 1.08, 0.94], shadow: 0.4 },
+  { dir: norm3([-0.62, -0.5, 0.58]), rgb: [0.4, 0.5, 0.68], shadow: 0.15 },
 ];
 
 /* true isometric view from (+x,+y): a real camera's screen-right axis

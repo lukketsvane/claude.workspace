@@ -9,20 +9,27 @@ in three materials:
   lights — a warm key and a cool fill, no ambient, no environment —
   with soft mapped shadows falling on the page itself
   (transparent canvas, shadow-catcher ground, vendored three.js).
-- **`toys.js`** — the same three scenes as a zero-dependency flat
+- **`toys.js`** — the same ten scenes as a zero-dependency flat
   canvas renderer: `<block-toys name="rull">`, plus a 2d mode
   (`mode="2d"`) of face-on silhouettes. This file also owns the
-  physics: three scenes, held to strict rules — at most one
-  instance of each of the five blocks, every motion is integrated
-  real dynamics (rolling constraint, rigid-body rocking, ballistic
-  flight), and exact contact geometry: pieces touch, they never
-  interpenetrate.
+  physics: ten scenes, held to strict rules — at most one instance
+  of each of the five blocks, every motion integrated real dynamics
+  (the one licensed exception is `stopp`, which plays by stop-motion
+  film rules: held poses, each a stable structure), and exact
+  contact geometry: pieces touch, they never interpenetrate.
 
-  | scene    | what happens |
-  | -------- | ------------ |
-  | `rull`   | the cylinder rolls the valley between the two planks: a = ⅔·g·sinθ, no slip anywhere, an energy-conserving pivot around each ramp lip — and both ramps sit at exactly the same angle, because 30⁄75 = 24⁄60 |
-  | `vugge`  | the short plank stands on end on the pedestal and rocks from bottom edge to bottom edge: the classic rocking-block equation, integrated, with an elastic edge swap through flat |
-  | `sprett` | the orange block bounces on the cube: exact parabolic flight, one full torque-free somersault per bounce at constant spin, landing flat every time |
+  | scene     | what happens |
+  | --------- | ------------ |
+  | `rull`    | the cylinder rolls the valley between the two planks: a = ⅔·g·sinθ, no slip anywhere, an energy-conserving pivot around each ramp lip — and both ramps sit at exactly the same angle, because 30⁄75 = 24⁄60 |
+  | `vugge`   | the short plank stands on end on the pedestal and rocks from bottom edge to bottom edge: the classic rocking-block equation, integrated, with an elastic edge swap through flat |
+  | `kanon`   | all five blocks rock at amplitudes solved so their periods lock to 4 : 5 : 6 : 7 : 8 cycles per loop — in step at the downbeat, drifting into a wave, snapping back |
+  | `flaske`  | spin the bottle: the cylinder in steady precession, rolling on its rim without slipping; the contact circle is chosen equal to its own radius so even the wood grain loops seamlessly |
+  | `fontene` | three pieces in elastic ballistic bounce, periods locked 2 : 3 : 4 — the cylinder end over end, the cube somersaulting, the orange block helicoptering |
+  | `kron`    | heads or tails: the cylinder flips half a turn per flight on the orange anvil, landing on the opposite face every time |
+  | `piruett` | a cube's inertia tensor is isotropic and its balanced corner puts gravity through the contact point: steady spin on the tip of the red column is an exact solution |
+  | `stopp`   | stop motion at 5 fps: the set rebuilds itself — tower, bridge, gate — one block moved per frame, hovering hand-held between placements |
+  | `skru`    | the Dzhanibekov flip: plank60 tumbles about its unstable intermediate axis, integrated from Euler's equations, with the launch spin solved by shooting so one ω-period lands it exactly flat |
+  | `sprett`  | the orange block bounces on the cube: exact parabolic flight, one full torque-free somersault per bounce at constant spin, landing flat every time |
 - **`blocks-gfx.js`** — the abstract density loops below rendered as
   flat pixels or voxel stacks: `<block-gfx name="sea" mode="3d">`.
 - **`blocks.js`** — the same loops as Unicode block glyphs

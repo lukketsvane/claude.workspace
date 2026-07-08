@@ -78,7 +78,7 @@ function loadProtos() {
         if (o.isMesh) {
           o.castShadow = true;
           o.receiveShadow = true;
-          if (o.material) o.material.shadowSide = THREE.FrontSide;
+          if (o.material) o.material.shadowSide = THREE.BackSide;
         }
       });
       protos[key] = proto;
@@ -90,8 +90,8 @@ function loadProtos() {
 
 /* ---- the two lights, and only the two lights ---- */
 
-const KEY = { dir: new THREE.Vector3(0.56, 0.28, 0.9).normalize(), color: 0xffd9b0, intensity: 3.1 };
-const FILL = { dir: new THREE.Vector3(-0.76, -0.3, 0.6).normalize(), color: 0xa3bfff, intensity: 1.15 };
+const KEY = { dir: new THREE.Vector3(0.48, 0.38, 0.85).normalize(), color: 0xffd9b0, intensity: 3.1 };
+const FILL = { dir: new THREE.Vector3(-0.62, -0.5, 0.58).normalize(), color: 0xa3bfff, intensity: 1.15 };
 
 /* camera: the same isometric framing as toys.js (azimuth 45°,
  * elevation 30°), so the GL cards line up with the canvas ones */
@@ -107,7 +107,7 @@ function makeLight({ dir, color, intensity }, r, mapSize, radius) {
   l.shadow.camera.near = 100; l.shadow.camera.far = 1400;
   l.shadow.radius = radius;
   l.shadow.blurSamples = 16;
-  l.shadow.bias = -0.0002;
+  l.shadow.bias = 0;
   return l;
 }
 
@@ -150,13 +150,15 @@ class BlockToysGL extends HTMLElement {
 
     this.#scene = new THREE.Scene();
 
-    const r = toy.ext.r * 1.9;
+    // the shadow frustum must cover every bit of ground the isometric
+    // canvas can see, or VSM sampling degenerates into speckle outside
+    const r = (toy.ext.r + toy.ext.z) * 1.9;
     this.#scene.add(makeLight(KEY, r, 2048, 5));
     this.#scene.add(makeLight(FILL, r, 1024, 9));
 
     // shadow catcher: the page itself is the floor
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(toy.ext.r * 6, toy.ext.r * 6),
+      new THREE.PlaneGeometry(r * 2, r * 2),
       new THREE.ShadowMaterial({ opacity: 0.42 }),
     );
     ground.receiveShadow = true;
