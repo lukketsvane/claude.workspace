@@ -9,10 +9,10 @@ in three materials:
   lights — a warm key and a cool fill, no ambient, no environment —
   with soft mapped shadows falling on the page itself
   (transparent canvas, shadow-catcher ground, vendored three.js).
-- **`toys.js`** — the same ten scenes as a zero-dependency flat
+- **`toys.js`** — the same twelve scenes as a zero-dependency flat
   canvas renderer: `<block-toys name="rull">`, plus a 2d mode
   (`mode="2d"`) of face-on silhouettes. This file also owns the
-  physics: ten scenes, held to strict rules — at most one instance
+  physics: twelve scenes, held to strict rules — at most one instance
   of each of the five blocks, every motion integrated real dynamics
   (the one licensed exception is `stopp`, which plays by stop-motion
   film rules: held poses, each a stable structure), and exact
@@ -27,6 +27,8 @@ in three materials:
   | `fontene` | three pieces in elastic ballistic bounce, periods locked 2 : 3 : 4 — the cylinder end over end, the cube somersaulting, the orange block helicoptering |
   | `kron`    | heads or tails: the cylinder flips half a turn per flight on the orange anvil, landing on the opposite face every time |
   | `piruett` | a cube's inertia tensor is isotropic and its balanced corner puts gravity through the contact point: steady spin on the tip of the red column is an exact solution |
+  | `terning` | the die: 120° of constant spin about the body diagonal per flight — it tumbles corner over corner yet lands flat every time, because a third-turn about the diagonal is a symmetry of the cube |
+  | `flipper` | the cube ping-pongs in the court: an elastic floor bounce at centre, then a wall kiss exactly at each apex — the standing plank left, the cylinder right; every impulse passes through the centre of mass, so it never spins |
   | `stopp`   | stop motion at 5 fps: the set rebuilds itself — tower, bridge, gate — one block moved per frame, hovering hand-held between placements |
   | `skru`    | the Dzhanibekov flip: plank60 tumbles about its unstable intermediate axis, integrated from Euler's equations, with the launch spin solved by shooting so one ω-period lands it exactly flat |
   | `sprett`  | the orange block bounces on the cube: exact parabolic flight, one full torque-free somersault per bounce at constant spin, landing flat every time |
