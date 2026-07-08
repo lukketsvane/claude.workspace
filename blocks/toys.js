@@ -1,7 +1,7 @@
 /*
  * toys.js — looping animations built from the klossete wooden block set.
  *
- * Ten scenes, held to strict rules:
+ * Twelve scenes, held to strict rules:
  *   - at most one instance of each of the five physical blocks
  *   - every motion is integrated real dynamics (rolling constraints,
  *     rigid-body rocking, ballistic flight, torque-free tumbling,
@@ -393,6 +393,54 @@ const KRON = (() => {
 })();
 
 /* ================================================================
+ * terning — the die
+ *
+ * A cube's inertia tensor is isotropic, so torque-free rotation
+ * about ANY fixed axis is uniform. Spin it about its body diagonal
+ * at exactly 120° per flight: it tumbles corner over corner like a
+ * thrown die, yet every landing is exactly flat, because a third of
+ * a turn about the diagonal is a symmetry of the cube. Three
+ * flights bring even the wood grain home.
+ * ================================================================ */
+
+const TERNING = (() => {
+  const G = 1200;                        // toy gravity, mm/s²
+  const TF = Math.sqrt(8 * 42 / G);      // one flight: 42 mm apex
+  const hop = (p) => {
+    const t = p * TF;
+    return (G * TF / 2) * t - 0.5 * G * t * t;
+  };
+  return { TF, hop };
+})();
+
+/* ================================================================
+ * flipper — the court
+ *
+ * The cube ping-pongs inside a court: an elastic floor bounce at
+ * centre, then it kisses a wall exactly at each apex — the standing
+ * plank on the left, the red cylinder on the right — reversing only
+ * its horizontal velocity, alternating sides forever. Every impulse
+ * passes through the centre of mass, so it never rotates at all.
+ * ================================================================ */
+
+const FLIPPER = (() => {
+  const G = 1200;                        // toy gravity, mm/s²
+  const H = 28;                          // apex height above rest
+  const TZ = Math.sqrt(8 * H / G);       // floor-bounce period
+  const L2 = 55;                         // apex reach: walls at ±L2
+  // u ∈ [0,1) covers two floor bounces: right apex, then left apex
+  const pose = (u) => {
+    const p = (u * 2) % 1, side = u < 0.5 ? 1 : -1;
+    const t = p * TZ;
+    const z = (G * TZ / 2) * t - 0.5 * G * t * t;
+    // out to the wall at apex, back to centre at the next bounce
+    const x = side * L2 * (p < 0.5 ? p * 2 : 2 - p * 2);
+    return { x, z };
+  };
+  return { L2, pose };
+})();
+
+/* ================================================================
  * skru — the Dzhanibekov flip
  *
  * plank60's three moments of inertia all differ, and its somersault
@@ -705,6 +753,42 @@ export const TOYS = {
         Math.min(STOPP.frames.length - 1, Math.floor(u * STOPP.frames.length))];
       return ["plank75", "orange", "cube", "cyl", "plank60"]
         .map((b) => piece(SET[b], ...f[b]));
+    },
+  },
+
+  /* the die that always lands flat */
+  terning: {
+    dur: 3 * TERNING.TF,
+    ext: { r: 102, z: 96 },
+    scene: (u) => {
+      const UPI = chain(RZ(-Math.PI / 4), RY(Math.atan(Math.SQRT2)), RZ(Math.PI / 4));
+      return [
+        piece(SET.plank75),
+        // constant spin about the body diagonal, 120° per flight
+        piece(SET.cube, T(0, 0, -15), PIRUETT.UP, RZ(Math.PI * 2 * u), UPI,
+          T(0, 0, 30 + TERNING.hop((u * 3) % 1))),
+        // the players
+        piece(SET.orange, T(44, -56, 0)),
+        piece(SET.cyl, T(-64, 28, 0)),
+        piece(SET.upright60, T(-16, -74, 0)),
+      ];
+    },
+  },
+
+  /* the cube ping-ponging between the plank and the column */
+  flipper: {
+    dur: 2 * Math.sqrt(8 * 28 / 1200),
+    ext: { r: 108, z: 68 },
+    scene: (u) => {
+      const { x, z } = FLIPPER.pose(u);
+      return [
+        piece(SET.upright60, T(-FLIPPER.L2 - 22.5, 0, 0)),  // left wall
+        piece(SET.cyl, T(FLIPPER.L2 + 30, 0, 0)),           // right wall
+        piece(SET.cube, T(x, 0, z)),                        // the ball
+        // the crowd
+        piece(SET.plank75, T(20, 44, 0)),
+        piece(SET.orange, T(-30, -52, 0)),
+      ];
     },
   },
 
