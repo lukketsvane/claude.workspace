@@ -1,12 +1,12 @@
 /*
  * toys.js — looping animations built from the klossete wooden block set.
  *
- * Twelve scenes, held to strict rules:
+ * Fourteen scenes, held to strict rules:
  *   - at most one instance of each of the five physical blocks
  *   - every motion is integrated real dynamics (rolling constraints,
  *     rigid-body rocking, ballistic flight, torque-free tumbling,
  *     steady precession) — no sine-wave fakery. The one exception is
- *     `stopp`, which plays by stop-motion film rules instead: held
+ *     `stopp`, `gange` and sisyfos's uphill half, which play by stop-motion film rules: held
  *     poses, each a physically stable structure.
  *   - exact contact geometry: pieces touch, they never interpenetrate
  *   - two directional lights (warm key + cool fill), no ambient, no
@@ -592,6 +592,103 @@ const STOPP = (() => {
 })();
 
 /* ================================================================
+ * gange — the walk
+ *
+ * Stop motion again: the short plank tip-walks end over end — stand,
+ * tip, lie, tip, stand — two steps out and two steps home, held at
+ * 5 fps. The turnaround is free, because a standing plank looks the
+ * same from both sides.
+ * ================================================================ */
+
+const GANGE = (() => {
+  const FPS = 5;
+  // key poses for plank60; x is the trailing edge of the footprint
+  const stand = (x) => [RY(-Math.PI / 2), T(x + 7.5, 0, 30)];
+  const lie = (x) => [T(x + 30, 0, 0)];
+  // mid-tips: the lying pose rotated 45° up about a bottom edge —
+  // about its trailing edge falling forward, its leading edge rising
+  const midA = (x) => [T(30, 0, 0), RY(-Math.PI / 4), T(x, 0, 0)];
+  const midB = (x) => [T(-30, 0, 0), RY(Math.PI / 4), T(x, 0, 0)];
+  const step = (x) => [stand(x), midA(x + 15), lie(x + 15), midB(x + 75)];
+  const out = [...step(-90), ...step(-15), stand(60)];
+  const frames = [...out, ...out.slice(1, -1).reverse(), out[0]];
+  return { frames, dur: frames.length / FPS };
+})();
+
+/* ================================================================
+ * sisyfos — the boulder
+ *
+ * Two rule books in one scene. Uphill is stop motion: the cube
+ * shoulders the cylinder up the ramp one held frame at a time,
+ * the spin always consistent with rolling backward. At the top it
+ * steps aside — and downhill is real integrated dynamics: the
+ * cylinder rolls away (a = ⅔·g·sinθ, no slip), pivots the lip,
+ * crosses the floor, and stops dead against the chock with an
+ * inelastic wooden thud. Then the work begins again.
+ * ================================================================ */
+
+const SISYFOS = (() => {
+  const OVER = 8;
+  const SIN = 24 / (75 - OVER);        // plank75 resting on the orange block
+  const COS = Math.sqrt(1 - SIN * SIN);
+  const TH = Math.asin(SIN);
+  const R = 15;
+  const TIPX = 10;                     // ramp tip edge on the ground
+  const CLIMB = 42;                    // release point up the top face
+  const G = 900;
+  const FPS = 5;
+
+  // top-face tip edge and pivot sweep, as in rull
+  const E = [TIPX + R * SIN, R * COS];
+  const DEND = Math.acos(1 - COS);
+  const ARC = R * (DEND - TH);
+  const XG = E[0] + R * Math.sin(DEND);        // touchdown
+  const CHOCK = 82;                            // chock face: stop centre + R
+  const S1 = CLIMB, S2 = S1 + ARC;
+  const SEND = S2 + (CHOCK - R - XG);          // inelastic stop at the chock
+
+  const dz = (s) =>
+    s < S1 ? -SIN :
+    s < S2 ? -Math.sin(TH + (s - S1) / R) : 0;
+  const traj = rollout((s) => -(2 / 3) * G * dz(s), 0, SEND);
+
+  const pose = (s) => {
+    s = Math.min(Math.max(s, 0), SEND);
+    let c;
+    if (s < S1) {
+      const sr = CLIMB - s;
+      c = [E[0] - COS * sr + R * SIN, E[1] + SIN * sr + R * COS];
+    } else if (s < S2) {
+      const d = TH + (s - S1) / R;
+      c = [E[0] + R * Math.sin(d), E[1] + R * Math.cos(d)];
+    } else {
+      c = [XG + (s - S2), R];
+    }
+    return { c, spin: s / R };
+  };
+
+  // timeline: N_PUSH held frames uphill, one step-aside frame,
+  // then the continuous roll, then rest while the pusher walks back
+  const N_PUSH = 10, N_REST = 4;
+  const T_PUSH = (N_PUSH + 1) / FPS;
+  const T_REST = N_REST / FPS;
+  const dur = T_PUSH + traj.T + T_REST;
+
+  // pusher poses: atop the chock at the bottom, then on the floor
+  // behind the roller, then held against the ramp face uphill
+  const cubePush = (s) => {
+    const { c } = pose(s);
+    // roller up the ramp: no floor behind it, so the pusher marches
+    // alongside the hill, level with the boulder
+    if (s < S1 - 4) return [T(c[0] + 8, 48, 0)];
+    if (c[0] + R + 32 > CHOCK - 2) return [T(CHOCK + 15, 0, 15)]; // on the chock
+    return [T(c[0] + R + 17, 0, 0)];
+  };
+  return { SIN, COS, TH, TIPX, OVER, SEND, traj, pose, cubePush,
+    N_PUSH, N_REST, FPS, T_PUSH, dur, CHOCK };
+})();
+
+/* ================================================================
  * sprett — the somersault
  *
  * The orange block bounces on the cube's top face: exact ballistic
@@ -753,6 +850,64 @@ export const TOYS = {
         Math.min(STOPP.frames.length - 1, Math.floor(u * STOPP.frames.length))];
       return ["plank75", "orange", "cube", "cyl", "plank60"]
         .map((b) => piece(SET[b], ...f[b]));
+    },
+  },
+
+  /* the plank takes a little walk */
+  gange: {
+    dur: GANGE.dur,
+    ext: { r: 112, z: 66 },
+    scene: (u) => {
+      const f = GANGE.frames[
+        Math.min(GANGE.frames.length - 1, Math.floor(u * GANGE.frames.length))];
+      return [
+        piece(SET.plank60, ...f),
+        // the neighbours it strolls past
+        piece(SET.plank75, T(-20, 62, 0)),
+        piece(SET.cube, T(52, -48, 0)),
+        piece(SET.orange, T(-20, -78, 0)),
+        piece(SET.cyl, T(84, 44, 0)),
+      ];
+    },
+  },
+
+  /* uphill by hand, downhill by physics */
+  sisyfos: {
+    dur: SISYFOS.dur,
+    ext: { r: 122, z: 62 },
+    scene: (u) => {
+      const { SIN, COS, TH, TIPX, OVER, SEND, traj, pose, cubePush,
+        N_PUSH, FPS, T_PUSH, CHOCK } = SISYFOS;
+      const t = u * SISYFOS.dur;
+      let s;
+      if (t < T_PUSH) {
+        // stop motion uphill: one held pose per frame, top to bottom
+        const k = Math.min(N_PUSH, Math.floor(t * FPS));
+        s = SEND * (1 - k / N_PUSH);
+      } else {
+        // real dynamics downhill, then rest against the chock
+        s = at(traj, t - T_PUSH);
+      }
+      const { c, spin } = pose(s);
+      // the pusher: shoulder to the boulder uphill, then walking
+      // back around while the boulder rolls
+      let cube;
+      if (t < T_PUSH) {
+        const k = Math.floor(t * FPS);
+        cube = k === N_PUSH ? [T(30, 46, 0)] : cubePush(s);
+      } else {
+        const back = [[30, 46, 0], [56, 44, 0], [86, 34, 0], [CHOCK + 15, 0, 15]];
+        const k = Math.min(back.length - 1, Math.floor((t - T_PUSH) * FPS));
+        cube = [T(...back[k])];
+      }
+      return [
+        // the hill: plank75 resting on the orange block, tip at TIPX
+        piece(SET.plank75, RY(TH), T(TIPX - 37.5 * COS, 0, 37.5 * SIN)),
+        piece(SET.orange, T(TIPX - (75 - OVER) * COS - 22.5, 0, 0)),
+        piece(SET.plank60, T(CHOCK + 30, 0, 0)),   // the chock
+        piece(SET.cyl, T(0, 0, -30), RX(Math.PI / 2), RY(spin), T(c[0], 0, c[1])),
+        piece(SET.cube, ...cube),
+      ];
     },
   },
 
