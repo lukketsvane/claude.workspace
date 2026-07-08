@@ -3,18 +3,20 @@
 Tiny looping animations for [iverfinne.no](https://iverfinne.no),
 in three materials:
 
-- **`toys.js`** — the klossete wooden set (see `models/BLOCKS.md`)
-  animated as real isometric geometry: `<block-toys name="rull">`.
-  Three scenes, held to strict rules: at most one instance of each
-  of the five blocks, every motion is integrated real dynamics
-  (rolling constraint, rigid-body rocking, ballistic flight), and
-  exact contact geometry — pieces touch, they never interpenetrate.
-  Lit by two directional lights only, a warm key and a cool fill,
-  each casting its own hard shadow; no ambient, no environment,
-  faces turned from both lights fall to black. A flat 2d mode
-  (`mode="2d"`) renders the same choreography face-on as
-  silhouettes. No dependencies, no WebGL — a tiny canvas renderer
-  with painter-sorted faces.
+- **`toys-gl.js`** — the klossete wooden set for real:
+  `<block-toys-gl name="rull">` renders the actual textured GLB
+  models (`models/`) in WebGL, lit by exactly two directional
+  lights — a warm key and a cool fill, no ambient, no environment —
+  with soft mapped shadows falling on the page itself
+  (transparent canvas, shadow-catcher ground, vendored three.js).
+- **`toys.js`** — the same three scenes as a zero-dependency flat
+  canvas renderer: `<block-toys name="rull">`, plus a 2d mode
+  (`mode="2d"`) of face-on silhouettes. This file also owns the
+  physics: three scenes, held to strict rules — at most one
+  instance of each of the five blocks, every motion is integrated
+  real dynamics (rolling constraint, rigid-body rocking, ballistic
+  flight), and exact contact geometry: pieces touch, they never
+  interpenetrate.
 
   | scene    | what happens |
   | -------- | ------------ |

@@ -79,6 +79,17 @@ const CUBE = box(30, 30, 30);
 const CYL = prism(15, 60);
 const ORANGE = box(45, 45, 24);
 
+/* the five physical blocks (upright60 is plank60 stood on end) —
+ * `block` identifies the piece for other renderers (toys-gl.js) */
+export const SET = {
+  plank75: { block: "plank75", mesh: PLANK75, color: COLOR.blue },
+  plank60: { block: "plank60", mesh: PLANK60, color: COLOR.blue },
+  upright60: { block: "upright60", mesh: UPRIGHT60, color: COLOR.blue },
+  cube: { block: "cube", mesh: CUBE, color: COLOR.lightblue },
+  cyl: { block: "cyl", mesh: CYL, color: COLOR.red },
+  orange: { block: "orange", mesh: ORANGE, color: COLOR.orange },
+};
+
 /* ---- transforms: {r: 3x3, t: [x,y,z]} ---- */
 
 const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -110,8 +121,8 @@ const apply = (xf, p) => {
   return [r[0] + xf.t[0], r[1] + xf.t[1], r[2] + xf.t[2]];
 };
 
-const piece = (mesh, color, ...ops) =>
-  ({ mesh, color, xf: ops.length ? chain(...ops) : T(0, 0, 0) });
+const piece = (def, ...ops) =>
+  ({ ...def, xf: ops.length ? chain(...ops) : T(0, 0, 0) });
 
 /* ---- integrated dynamics ----
  *
@@ -164,7 +175,7 @@ const RULL = (() => {
   const R = 15;                         // cylinder radius
   const TIP = 40;                       // ramp tips at x = ∓TIP
   const CLIMB = 38;                     // rest point, up each top face
-  const G = 430;                        // toy gravity, mm/s²
+  const G = 900;                        // toy gravity, mm/s²
 
   // tip edges of the two top faces (the lips the cylinder pivots on)
   const EL = [-TIP + R * SIN, R * COS];
@@ -230,7 +241,7 @@ const VUGGE = (() => {
   const BETA = Math.atan2(W, H);           // tipping angle
   const I = (15 * 15 + 60 * 60) / 12 + RG * RG; // inertia/m about an edge
   const PHI0 = 0.62 * BETA;                // rocking amplitude
-  const G = 300;                           // toy gravity, mm/s²
+  const G = 560;                           // toy gravity, mm/s²
 
   // quarter period: released at φ0 on one edge, falling to flat.
   // φ'' = -(G·R/I)·sin(β − φ); integrated in s = φ0 − φ so the
@@ -260,8 +271,8 @@ const VUGGE = (() => {
  * ================================================================ */
 
 const SPRETT = (() => {
-  const G = 700;                    // toy gravity, mm/s²
-  const TF = 0.9;                   // flight time, s
+  const G = 1400;                   // toy gravity, mm/s²
+  const TF = 0.64;                  // flight time, s
   const Z0 = 45 + 12;               // resting centre height on the cube
   const V0 = G * TF / 2;            // launch speed for a TF flight
   const zc = (t) => Z0 + V0 * t - 0.5 * G * t * t;
@@ -284,13 +295,13 @@ export const TOYS = {
       const { c, spin } = pose(at(traj, tau * traj.T));
       return [
         // long ramp: tip edge on the ground at -TIP, resting on the cube
-        piece(PLANK75, COLOR.blue, RY(TH), T(-TIP - 37.5 * COS, 0, 37.5 * SIN)),
-        piece(CUBE, COLOR.lightblue, T(-TIP - (75 - OVER) * COS - 15, 0, 0)),
+        piece(SET.plank75, RY(TH), T(-TIP - 37.5 * COS, 0, 37.5 * SIN)),
+        piece(SET.cube, T(-TIP - (75 - OVER) * COS - 15, 0, 0)),
         // short ramp: tip edge at +TIP, resting on the orange block
-        piece(PLANK60, COLOR.blue, RY(-TH), T(TIP + 30 * COS, 0, 30 * SIN)),
-        piece(ORANGE, COLOR.orange, T(TIP + (60 - OVER * 0.8) * COS + 22.5, 0, 0)),
+        piece(SET.plank60, RY(-TH), T(TIP + 30 * COS, 0, 30 * SIN)),
+        piece(SET.orange, T(TIP + (60 - OVER * 0.8) * COS + 22.5, 0, 0)),
         // the roller: axis along y, spun by its own arc length
-        piece(CYL, COLOR.red, T(0, 0, -30), RX(Math.PI / 2),
+        piece(SET.cyl, T(0, 0, -30), RX(Math.PI / 2),
           RY(spin), T(c[0], 0, c[1])),
       ];
     },
@@ -305,12 +316,12 @@ export const TOYS = {
       const e = phi >= 0 ? VUGGE.W : -VUGGE.W; // pivot edge under the lean
       return [
         // the pedestal: long plank, orange block, and the rocker on top
-        piece(PLANK75, COLOR.blue),
-        piece(ORANGE, COLOR.orange, T(0, 0, 15)),
-        piece(UPRIGHT60, COLOR.blue, T(-e, 0, 0), RY(phi), T(e, 0, 39)),
+        piece(SET.plank75),
+        piece(SET.orange, T(0, 0, 15)),
+        piece(SET.upright60, T(-e, 0, 0), RY(phi), T(e, 0, 39)),
         // the audience, sitting this one out
-        piece(CUBE, COLOR.lightblue, T(-58, 42, 0)),
-        piece(CYL, COLOR.red, T(68, -22, 0)),
+        piece(SET.cube, T(-58, 42, 0)),
+        piece(SET.cyl, T(68, -22, 0)),
       ];
     },
   },
@@ -322,13 +333,13 @@ export const TOYS = {
     scene: (u) => {
       const t = u * SPRETT.TF;
       return [
-        piece(PLANK75, COLOR.blue),
-        piece(CUBE, COLOR.lightblue, T(0, 0, 15)),
-        piece(ORANGE, COLOR.orange, T(0, 0, -12),
+        piece(SET.plank75),
+        piece(SET.cube, T(0, 0, 15)),
+        piece(SET.orange, T(0, 0, -12),
           RY(Math.PI * 2 * u), T(0, 0, SPRETT.zc(t))),
         // the witnesses, wide of the flight path
-        piece(CYL, COLOR.red, T(52, -52, 0)),
-        piece(UPRIGHT60, COLOR.blue, T(-56, 48, 0)),
+        piece(SET.cyl, T(52, -52, 0)),
+        piece(SET.upright60, T(-56, 48, 0)),
       ];
     },
   },
@@ -352,7 +363,10 @@ const LIGHTS = [
   { dir: norm3([-0.76, -0.3, 0.6]), rgb: [0.4, 0.5, 0.68], shadow: 0.15 },
 ];
 
-const project = ([x, y, z]) => [(x - y) * K, (x + y) * K * SIN_E - z * COS_E];
+/* true isometric view from (+x,+y): a real camera's screen-right axis
+ * there is (y−x)/√2, which keeps this projection consistent with the
+ * physical camera in toys-gl.js */
+const project = ([x, y, z]) => [(y - x) * K, (x + y) * K * SIN_E - z * COS_E];
 const nearness = ([x, y, z]) => (x + y) * K * COS_E + z * SIN_E;
 
 function hexRgb(c) {

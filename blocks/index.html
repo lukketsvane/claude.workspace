@@ -100,13 +100,14 @@
     <p>Tiny looping animations for iverfinne.no. The wooden set from klossete,
        plus abstract density loops rendered as voxels, pixels, or glyphs.
        Click a card to copy its tag.</p>
-    <block-toys class="hero" name="rull" scale="0.75"></block-toys>
+    <block-toys-gl class="hero" name="rull" scale="0.75"></block-toys-gl>
   </header>
 
   <div class="bar">
     <h2>klossane</h2>
-    <div class="modes" role="group" aria-label="dimension" id="toymodes">
-      <button data-mode="3d" aria-pressed="true">3d</button>
+    <div class="modes" role="group" aria-label="renderer" id="toymodes">
+      <button data-mode="gl" aria-pressed="true">gl</button>
+      <button data-mode="3d" aria-pressed="false">flat</button>
       <button data-mode="2d" aria-pressed="false">2d</button>
     </div>
   </div>
@@ -126,14 +127,16 @@
   import { LOOPS } from "./blocks.js";
   import "./blocks-gfx.js";
   import { TOYS } from "./toys.js";
+  import "./toys-gl.js";
 
   let mode = "3d";
   const fieldsGrid = document.getElementById("grid");
 
-  // klossane cards, with their own 3d / 2d toggle
-  let toyMode = "3d";
-  const toyTag = (name) => toyMode === "2d"
-    ? `<block-toys name="${name}" mode="2d"></block-toys>`
+  // klossane cards, with their own gl / flat / 2d toggle
+  let toyMode = "gl";
+  const toyTag = (name) =>
+    toyMode === "gl" ? `<block-toys-gl name="${name}"></block-toys-gl>`
+    : toyMode === "2d" ? `<block-toys name="${name}" mode="2d"></block-toys>`
     : `<block-toys name="${name}"></block-toys>`;
 
   const toysGrid = document.getElementById("toys");
@@ -160,7 +163,7 @@
 
   function renderToys() {
     for (const { name, card } of toyCards) {
-      const el = document.createElement("block-toys");
+      const el = document.createElement(toyMode === "gl" ? "block-toys-gl" : "block-toys");
       el.setAttribute("name", name);
       if (toyMode === "2d") el.setAttribute("mode", "2d");
       card.querySelector(".stage").replaceChildren(el);
