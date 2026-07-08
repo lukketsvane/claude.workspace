@@ -4,13 +4,23 @@ Tiny looping animations for [iverfinne.no](https://iverfinne.no),
 in three materials:
 
 - **`toys.js`** — the klossete wooden set (see `models/BLOCKS.md`)
-  animated as real isometric geometry: `<block-toys name="carousel">`.
-  Thirty-five scenes in escalating order of mischief, from carousel
-  and seesaw through escher, tornado, klokke, ferris, fyrverkeri and
-  bigbang — plus a flat 2d mode (`mode="2d"`) that renders the same
-  choreography face-on as silhouettes. No dependencies, no WebGL —
-  a tiny canvas renderer with painter-sorted faces, sun-and-sky
-  shading, and hard cast shadows.
+  animated as real isometric geometry: `<block-toys name="rull">`.
+  Three scenes, held to strict rules: at most one instance of each
+  of the five blocks, every motion is integrated real dynamics
+  (rolling constraint, rigid-body rocking, ballistic flight), and
+  exact contact geometry — pieces touch, they never interpenetrate.
+  Lit by two directional lights only, a warm key and a cool fill,
+  each casting its own hard shadow; no ambient, no environment,
+  faces turned from both lights fall to black. A flat 2d mode
+  (`mode="2d"`) renders the same choreography face-on as
+  silhouettes. No dependencies, no WebGL — a tiny canvas renderer
+  with painter-sorted faces.
+
+  | scene    | what happens |
+  | -------- | ------------ |
+  | `rull`   | the cylinder rolls the valley between the two planks: a = ⅔·g·sinθ, no slip anywhere, an energy-conserving pivot around each ramp lip — and both ramps sit at exactly the same angle, because 30⁄75 = 24⁄60 |
+  | `vugge`  | the short plank stands on end on the pedestal and rocks from bottom edge to bottom edge: the classic rocking-block equation, integrated, with an elastic edge swap through flat |
+  | `sprett` | the orange block bounces on the cube: exact parabolic flight, one full torque-free somersault per bounce at constant spin, landing flat every time |
 - **`blocks-gfx.js`** — the abstract density loops below rendered as
   flat pixels or voxel stacks: `<block-gfx name="sea" mode="3d">`.
 - **`blocks.js`** — the same loops as Unicode block glyphs
