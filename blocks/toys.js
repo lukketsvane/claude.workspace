@@ -1,15 +1,21 @@
 /*
  * toys.js — looping animations built from the klossete wooden block set.
  *
- * The five physical pieces (see models/BLOCKS.md) rendered as real
- * geometry on a canvas: a tiny orthographic-isometric engine with
- * painter-sorted faces, pure directional sunlight (no ambient),
- * and hard cast shadows.
- * No dependencies, no WebGL.
+ * Three scenes, held to strict rules:
+ *   - at most one instance of each of the five physical blocks
+ *   - every motion is integrated real dynamics (rolling constraint,
+ *     rigid-body rocking, ballistic flight) — no sine-wave fakery
+ *   - exact contact geometry: pieces touch, they never interpenetrate
+ *   - two directional lights (warm key + cool fill), no ambient,
+ *     no environment — faces away from both lights fall to black,
+ *     and each light casts its own hard shadow
+ *
+ * No dependencies, no WebGL: a tiny orthographic-isometric engine
+ * with painter-sorted faces on a 2d canvas.
  *
  * Usage:
  *   <script type="module" src="/toys.js"></script>
- *   <block-toys name="carousel"></block-toys>
+ *   <block-toys name="rull"></block-toys>
  *
  * Attributes:
  *   name    a scene from TOYS (required)
@@ -107,667 +113,244 @@ const apply = (xf, p) => {
 const piece = (mesh, color, ...ops) =>
   ({ mesh, color, xf: ops.length ? chain(...ops) : T(0, 0, 0) });
 
-/* ---- easing ---- */
+/* ---- integrated dynamics ----
+ *
+ * Each scene's motion is the solution of its equation of motion,
+ * integrated once at module load into a lookup table and sampled
+ * by u. Loops close exactly because the dynamics are conservative
+ * and the choreography is time-symmetric (or strictly periodic).
+ */
 
-const clamp01 = (v) => Math.min(1, Math.max(0, v));
-const easeOut = (v) => 1 - Math.pow(1 - clamp01(v), 3);
-const easeInOut = (v) => {
-  v = clamp01(v);
-  return v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
-};
-const window01 = (u, from, len) => clamp01((u - from) / len);
+/* integrate s'' = acc(s) from rest at s0 until v drops back to 0
+ * or s reaches sMax; returns positions sampled at a fixed dt */
+function rollout(acc, s0, sMax = Infinity, dt = 1e-3, maxSteps = 1e6) {
+  const out = [s0];
+  let s = s0, v = 0;
+  for (let i = 0; i < maxSteps; i++) {
+    // velocity Verlet
+    const a0 = acc(s);
+    s += v * dt + 0.5 * a0 * dt * dt;
+    v += 0.5 * (a0 + acc(s)) * dt;
+    out.push(s);
+    if (s >= sMax || (i > 2 && v <= 0)) break;
+  }
+  return { s: out, T: (out.length - 1) * dt, dt };
+}
+
+/* sample a rollout at time t with linear interpolation */
+function at(traj, t) {
+  const x = Math.min(Math.max(t / traj.dt, 0), traj.s.length - 1);
+  const i = Math.min(Math.floor(x), traj.s.length - 2);
+  return traj.s[i] + (traj.s[i + 1] - traj.s[i]) * (x - i);
+}
+
+/* ================================================================
+ * rull — the valley
+ *
+ * The red cylinder rolls down the long plank, hops the lip, crosses
+ * the floor, climbs the short plank, and rolls back — forever.
+ * The set conspires: 30/75 = 24/60, so a plank75 resting on the cube
+ * and a plank60 resting on the orange block make exactly the same
+ * ramp angle. Rolling without slipping throughout (a = ⅔·g·sinθ for
+ * a solid cylinder), with an energy-conserving pivot around each
+ * ramp's tip edge. Time-symmetric, so the loop closes exactly.
+ * ================================================================ */
+
+const RULL = (() => {
+  const OVER = 8;                       // plank overhang past the cube edge
+  const SIN = 30 / (75 - OVER);         // ramp angle: sinθ = 0.44776…
+  const COS = Math.sqrt(1 - SIN * SIN);
+  const TH = Math.asin(SIN);
+  const R = 15;                         // cylinder radius
+  const TIP = 40;                       // ramp tips at x = ∓TIP
+  const CLIMB = 38;                     // rest point, up each top face
+  const G = 430;                        // toy gravity, mm/s²
+
+  // tip edges of the two top faces (the lips the cylinder pivots on)
+  const EL = [-TIP + R * SIN, R * COS];
+  const ER = [TIP - R * SIN, R * COS];
+  // pivot sweep: from ramp-normal until the cylinder touches ground
+  const DEND = Math.acos(1 - COS);
+  const ARC = R * (DEND - TH);
+  const XGL = EL[0] + R * Math.sin(DEND); // touchdown points
+  const XGR = ER[0] - R * Math.sin(DEND);
+
+  // path coordinate s: 0 at rest on the left ramp, rising rightward
+  const S1 = CLIMB, S2 = S1 + ARC, S3 = S2 + (XGR - XGL), S4 = S3 + ARC;
+  const SEND = S4 + CLIMB;
+
+  // slope of the centre's height along the path — the whole equation
+  // of motion, since kinetic energy is ¾mv² in every mode (rolling
+  // on a plane and pivoting about an edge share I/mr² = ½)
+  const dz = (s) =>
+    s < S1 ? -SIN :
+    s < S2 ? -Math.sin(TH + (s - S1) / R) :
+    s < S3 ? 0 :
+    s < S4 ? Math.sin(DEND - (s - S3) / R) :
+    SIN;
+  const traj = rollout((s) => -(2 / 3) * G * dz(s), 0, SEND);
+
+  // centre position + accumulated spin from the path coordinate
+  const pose = (s) => {
+    s = Math.min(Math.max(s, 0), SEND);
+    let c;
+    if (s < S1) {
+      const sr = CLIMB - s;
+      c = [EL[0] - COS * sr + R * SIN, EL[1] + SIN * sr + R * COS];
+    } else if (s < S2) {
+      const d = TH + (s - S1) / R;
+      c = [EL[0] + R * Math.sin(d), EL[1] + R * Math.cos(d)];
+    } else if (s < S3) {
+      c = [XGL + (s - S2), R];
+    } else if (s < S4) {
+      const d = DEND - (s - S3) / R;
+      c = [ER[0] - R * Math.sin(d), ER[1] + R * Math.cos(d)];
+    } else {
+      const sr = s - S4;
+      c = [ER[0] + COS * sr - R * SIN, ER[1] + SIN * sr + R * COS];
+    }
+    return { c, spin: s / R };
+  };
+
+  return { SIN, COS, TH, TIP, OVER, EL, ER, SEND, traj, pose };
+})();
+
+/* ================================================================
+ * vugge — the metronome
+ *
+ * The short plank stands on end on the long plank and rocks from
+ * bottom edge to bottom edge: Housner's rocking block, integrated
+ * exactly. Energy carries it through the vertical, the edge swap
+ * at flat is elastic, and the rest of the family sits and watches.
+ * ================================================================ */
+
+const VUGGE = (() => {
+  const W = 7.5, H = 30;                   // half-width, half-height
+  const RG = Math.hypot(W, H);             // edge → centre of mass
+  const BETA = Math.atan2(W, H);           // tipping angle
+  const I = (15 * 15 + 60 * 60) / 12 + RG * RG; // inertia/m about an edge
+  const PHI0 = 0.62 * BETA;                // rocking amplitude
+  const G = 300;                           // toy gravity, mm/s²
+
+  // quarter period: released at φ0 on one edge, falling to flat.
+  // φ'' = -(G·R/I)·sin(β − φ); integrated in s = φ0 − φ so the
+  // rollout runs forward, from rest to the flat position s = φ0
+  const traj = rollout((s) => (G * RG / I) * Math.sin(BETA - PHI0 + s), 0, PHI0);
+  const fall = (t) => PHI0 - at(traj, t); // φ0 → 0 over one quarter
+
+  // signed tilt over one full period (4 quarters), u ∈ [0,1)
+  const tilt = (u) => {
+    const q = Math.floor(u * 4), t = (u * 4 - q) * traj.T;
+    if (q === 0) return fall(t);            // on the right edge, falling
+    if (q === 1) return -fall(traj.T - t);  // through flat, up the left
+    if (q === 2) return -fall(t);           // back down the left edge
+    return fall(traj.T - t);                // and up the right again
+  };
+
+  return { W, PHI0, traj, tilt };
+})();
+
+/* ================================================================
+ * sprett — the somersault
+ *
+ * The orange block bounces on the cube's top face: exact ballistic
+ * flight (z̈ = −g), one full torque-free somersault per flight at
+ * constant angular velocity, and an elastic instantaneous bounce.
+ * It leaves flat and one revolution later it lands flat.
+ * ================================================================ */
+
+const SPRETT = (() => {
+  const G = 700;                    // toy gravity, mm/s²
+  const TF = 0.9;                   // flight time, s
+  const Z0 = 45 + 12;               // resting centre height on the cube
+  const V0 = G * TF / 2;            // launch speed for a TF flight
+  const zc = (t) => Z0 + V0 * t - 0.5 * G * t * t;
+  return { G, TF, Z0, zc, apex: Z0 + G * TF * TF / 8 };
+})();
 
 /* ---- the scenes ---- */
 
 export const TOYS = {
 
-  /* pieces riding a slow merry-go-round around the red cylinder */
-  carousel: {
-    dur: 7, ext: { r: 115, z: 75 },
+  /* the cylinder rolling the valley between the two planks */
+  rull: {
+    dur: 2 * RULL.traj.T,
+    ext: { r: 148, z: 78 },
     scene: (u) => {
-      const a = u * Math.PI * 2;
-      const rider = (mesh, color, i) => {
-        const th = a + (i / 3) * Math.PI * 2;
-        const bob = 8 + 6 * Math.sin(a * 2 + i * 2.1);
-        return piece(mesh, color, RZ(th + Math.PI / 2),
-          T(80 * Math.cos(th), 80 * Math.sin(th), bob));
-      };
+      const { SIN, COS, TH, TIP, OVER, traj, pose } = RULL;
+      // palindrome in time: out on the first half, home on the second;
+      // position and spin both retrace with the path coordinate
+      const tau = u < 0.5 ? u * 2 : 2 - u * 2;
+      const { c, spin } = pose(at(traj, tau * traj.T));
       return [
-        piece(CYL, COLOR.red),
-        rider(CUBE, COLOR.lightblue, 0),
-        rider(ORANGE, COLOR.orange, 1),
-        rider(PLANK60, COLOR.blue, 2),
+        // long ramp: tip edge on the ground at -TIP, resting on the cube
+        piece(PLANK75, COLOR.blue, RY(TH), T(-TIP - 37.5 * COS, 0, 37.5 * SIN)),
+        piece(CUBE, COLOR.lightblue, T(-TIP - (75 - OVER) * COS - 15, 0, 0)),
+        // short ramp: tip edge at +TIP, resting on the orange block
+        piece(PLANK60, COLOR.blue, RY(-TH), T(TIP + 30 * COS, 0, 30 * SIN)),
+        piece(ORANGE, COLOR.orange, T(TIP + (60 - OVER * 0.8) * COS + 22.5, 0, 0)),
+        // the roller: axis along y, spun by its own arc length
+        piece(CYL, COLOR.red, T(0, 0, -30), RX(Math.PI / 2),
+          RY(spin), T(c[0], 0, c[1])),
       ];
     },
   },
 
-  /* a tower that builds itself, then takes itself down */
-  tower: {
-    dur: 6, ext: { r: 55, z: 175 },
+  /* the rocking plank, keeping time for the family */
+  vugge: {
+    dur: 4 * VUGGE.traj.T,
+    ext: { r: 92, z: 104 },
     scene: (u) => {
-      const tau = u < 0.5 ? u * 2 : (1 - u) * 2; // palindrome
-      const drop = (mesh, color, rest, slot) => {
-        const p = easeOut(window01(tau, slot * 0.16, 0.2));
-        return piece(mesh, color, T(0, 0, rest + (1 - p) * (175 - rest)));
-      };
+      const phi = VUGGE.tilt(u);
+      const e = phi >= 0 ? VUGGE.W : -VUGGE.W; // pivot edge under the lean
       return [
-        drop(PLANK75, COLOR.blue, 0, 0),
-        drop(CUBE, COLOR.lightblue, 15, 1),
-        drop(ORANGE, COLOR.orange, 45, 2),
-        drop(CYL, COLOR.red, 69, 3),
+        // the pedestal: long plank, orange block, and the rocker on top
+        piece(PLANK75, COLOR.blue),
+        piece(ORANGE, COLOR.orange, T(0, 0, 15)),
+        piece(UPRIGHT60, COLOR.blue, T(-e, 0, 0), RY(phi), T(e, 0, 39)),
+        // the audience, sitting this one out
+        piece(CUBE, COLOR.lightblue, T(-58, 42, 0)),
+        piece(CYL, COLOR.red, T(68, -22, 0)),
       ];
     },
   },
 
-  /* the long plank rocking on the cube, passengers riding the ends */
-  seesaw: {
-    dur: 4, ext: { r: 60, z: 85 },
+  /* the orange block's endless somersault on the cube */
+  sprett: {
+    dur: SPRETT.TF,
+    ext: { r: 92, z: 165 },
     scene: (u) => {
-      const a = 0.2 * Math.sin(u * Math.PI * 2);
-      const onPlank = (mesh, color, x) =>
-        piece(mesh, color, T(x, 0, 15), RY(a), T(0, 0, 30));
-      return [
-        piece(CUBE, COLOR.lightblue),
-        piece(PLANK75, COLOR.blue, RY(a), T(0, 0, 30)),
-        onPlank(ORANGE, COLOR.orange, -26),
-        onPlank(CYL, COLOR.red, 28),
-      ];
-    },
-  },
-
-  /* a standing plank ticking like a metronome */
-  metronome: {
-    dur: 3, ext: { r: 55, z: 85 },
-    scene: (u) => {
-      const a = 0.3 * Math.sin(u * Math.PI * 2);
-      return [
-        piece(ORANGE, COLOR.orange),
-        piece(UPRIGHT60, COLOR.blue, RY(a), T(0, 0, 24)),
-      ];
-    },
-  },
-
-  /* the orange block bouncing with squash and stretch */
-  bounce: {
-    dur: 2.4, ext: { r: 55, z: 110 },
-    scene: (u) => {
-      const h = Math.abs(Math.sin(u * Math.PI * 2)); // two bounces
-      const z = 15 + 70 * h * h;
-      // square footprint: a quarter turn per loop closes seamlessly
+      const t = u * SPRETT.TF;
       return [
         piece(PLANK75, COLOR.blue),
-        piece(ORANGE, COLOR.orange, RZ(u * Math.PI / 2), T(0, 0, z)),
-      ];
-    },
-  },
-
-  /* the cylinder rolling back and forth along two planks */
-  roll: {
-    dur: 5, ext: { r: 85, z: 40 },
-    scene: (u) => {
-      const x = 25 * Math.sin(u * Math.PI * 2);
-      return [
-        piece(PLANK75, COLOR.blue, T(-37.5, 0, 0)),
-        piece(PLANK75, COLOR.blue, T(37.5, 0, 0)),
-        piece(CYL, COLOR.red, RZ(-x / 15), RY(Math.PI / 2), T(x - 30, 0, 30)),
-      ];
-    },
-  },
-
-  /* the orange block doing a lazy somersault */
-  flip: {
-    dur: 3, ext: { r: 45, z: 115 },
-    scene: (u) => {
-      const z = 30 + 45 * Math.pow(Math.sin(u * Math.PI), 2);
-      return [
-        piece(ORANGE, COLOR.orange, T(0, 0, -12), RY(u * Math.PI * 2), T(0, 0, z + 12)),
-      ];
-    },
-  },
-
-  /* a spiral staircase of planks turning around the cylinder */
-  stairs: {
-    dur: 9, ext: { r: 80, z: 105 },
-    scene: (u) => {
-      const spin = RZ(u * Math.PI * 2);
-      const steps = [];
-      for (let i = 0; i < 6; i++) {
-        const th = i * 0.9;
-        steps.push(piece(PLANK60, COLOR.blue,
-          RZ(th + Math.PI / 2), T(34 * Math.cos(th), 34 * Math.sin(th), i * 15), spin));
-      }
-      return [piece(CYL, COLOR.red, T(0, 0, 0), spin), ...steps];
-    },
-  },
-
-  /* a loaded wagon crossing the scene, fading at the edges */
-  train: {
-    dur: 5, ext: { r: 110, z: 80 },
-    scene: (u) => {
-      const x = -95 + 190 * u;
-      const alpha = clamp01(Math.min(u / 0.15, (1 - u) / 0.15));
-      const on = (mesh, color, dx) => ({
-        ...piece(mesh, color, T(x + dx, 0, 15)), alpha,
-      });
-      return [
-        { ...piece(PLANK75, COLOR.blue, T(x, 0, 0)), alpha },
-        on(CUBE, COLOR.lightblue, -18),
-        on(CYL, COLOR.red, 18),
-      ];
-    },
-  },
-
-  /* the whole set, breathing gently in a row */
-  family: {
-    dur: 5, ext: { r: 125, z: 75 },
-    scene: (u) => {
-      const a = u * Math.PI * 2;
-      const at = (mesh, color, x, i) =>
-        piece(mesh, color, T(x, 0, 6 + 5 * Math.sin(a + i * 1.1)));
-      return [
-        at(PLANK75, COLOR.blue, -85, 0),
-        at(CUBE, COLOR.lightblue, -25, 1),
-        at(CYL, COLOR.red, 10, 2),
-        at(ORANGE, COLOR.orange, 50, 3),
-        at(PLANK60, COLOR.blue, 100, 4),
-      ];
-    },
-  },
-
-  /* ---- and from here on it escalates ---- */
-
-  /* a stadium wave rolling across a 5×5 field of cubes */
-  wavefield: {
-    dur: 5, ext: { r: 95, z: 55 },
-    scene: (u) => {
-      const out = [];
-      for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
-        const z = 10 + 9 * Math.sin(u * Math.PI * 2 - (i + j) * 0.55);
-        out.push(piece(CUBE, (i + j) % 2 ? COLOR.lightblue : COLOR.blue,
-          T((i - 2) * 34, (j - 2) * 34, z)));
-      }
-      return out;
-    },
-  },
-
-  /* a pendulum wave: planks and pins ticking at stepped frequencies,
-   * drifting out of phase and snapping back once per loop */
-  pendulum: {
-    dur: 12, ext: { r: 100, z: 70 },
-    scene: (u) => {
-      const out = [];
-      for (let i = 0; i < 7; i++) {
-        const a = 0.3 * Math.sin(u * Math.PI * 2 * (2 + i));
-        const [mesh, color] = i % 2 ? [CYL, COLOR.red] : [UPRIGHT60, COLOR.blue];
-        out.push(piece(mesh, color, RX(a), T((i - 3) * 26, 0, 0)));
-      }
-      return out;
-    },
-  },
-
-  /* a ring of dominoes forever knocking each other down */
-  dominoes: {
-    dur: 6, ext: { r: 95, z: 65 },
-    scene: (u) => {
-      const N = 10, R = 62;
-      return Array.from({ length: N }, (_, i) => {
-        const th = (i / N) * Math.PI * 2;
-        const p = ((u - i / N) % 1 + 1) % 1;
-        let a = 0;
-        if (p < 0.12) a = 1.05 * Math.pow(p / 0.12, 2);
-        else if (p < 0.5) a = 1.05;
-        else if (p < 0.7) a = 1.05 * (1 - easeInOut((p - 0.5) / 0.2));
-        return piece(UPRIGHT60, COLOR.blue,
-          T(-7.5, 0, 0), RY(a), T(7.5, 0, 0),
-          RZ(th + Math.PI / 2), T(R * Math.cos(th), R * Math.sin(th), 0));
-      });
-    },
-  },
-
-  /* sun, planet, moon: nested orbits in whole-number time */
-  orrery: {
-    dur: 10, ext: { r: 130, z: 80 },
-    scene: (u) => {
-      const a = u * Math.PI * 2;
-      const px = 55 * Math.cos(a), py = 55 * Math.sin(a);
-      const m = a * 5;
-      return [
-        piece(CYL, COLOR.red),
-        piece(ORANGE, COLOR.orange, RZ(a), T(px, py, 8)),
-        piece(CUBE, COLOR.lightblue, RZ(m),
-          T(px + 42 * Math.cos(m), py + 42 * Math.sin(m), 12)),
-        piece(PLANK60, COLOR.blue, RZ(a * 2 + Math.PI / 2),
-          T(100 * Math.cos(a * 2), 100 * Math.sin(a * 2), 8)),
-      ];
-    },
-  },
-
-  /* the impossible staircase: steps sink as they turn, so the cube
-   * climbs forever and gets nowhere */
-  escher: {
-    dur: 8, ext: { r: 78, z: 150 },
-    scene: (u) => {
-      const g = u * 8; // eight steps per loop, seamless treadmill
-      const out = [piece(CYL, COLOR.red), piece(CYL, COLOR.red, T(0, 0, 60))];
-      for (let k = Math.floor(g) - 1; k < Math.floor(g) + 10; k++) {
-        const d = k - g;
-        const th = d * (Math.PI / 4);
-        const z = 14 * d + 14;
-        const alpha = clamp01((d + 1.4) / 1.2) * clamp01((8.6 - d) / 1.2);
-        if (alpha <= 0.01 || z < 0) continue;
-        out.push({
-          ...piece(PLANK60, COLOR.blue, RZ(th + Math.PI / 2),
-            T(40 * Math.cos(th), 40 * Math.sin(th), z)),
-          alpha,
-        });
-      }
-      const hop = 12 * Math.pow(Math.sin(Math.PI * (g % 1)), 2);
-      out.push(piece(CUBE, COLOR.lightblue, T(0, 40, 57 + hop)));
-      return out;
-    },
-  },
-
-  /* twelve pieces caught in a rising vortex */
-  tornado: {
-    dur: 6, ext: { r: 118, z: 160 },
-    scene: (u) => {
-      const kinds = [
-        [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange],
-        [PLANK60, COLOR.blue], [CYL, COLOR.red],
-      ];
-      const out = [];
-      for (let i = 0; i < 12; i++) {
-        const h = (u * 2 + i / 12) % 1;
-        const th = Math.PI * 2 * (u * 3 + i * 0.618);
-        const r = 18 + 60 * h;
-        const [mesh, color] = kinds[i % 4];
-        out.push({
-          ...piece(mesh, color,
-            RZ(Math.PI * 2 * (u * 4 + i / 3)),
-            T(r * Math.cos(th), r * Math.sin(th), 6 + h * 125)),
-          alpha: clamp01(Math.sin(Math.PI * h) * 1.8),
-        });
-      }
-      return out;
-    },
-  },
-
-  /* a juggling fountain: pieces arc across, then shuffle back in line */
-  fountain: {
-    dur: 5, ext: { r: 95, z: 130 },
-    scene: (u) => {
-      const kinds = [
-        [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange], [CYL, COLOR.red],
-        [PLANK60, COLOR.blue], [CUBE, COLOR.lightblue], [ORANGE, COLOR.orange],
-      ];
-      return kinds.map(([mesh, color], i) => {
-        const p = (u + i / 6) % 1;
-        if (p < 0.65) {
-          const s = p / 0.65;
-          return piece(mesh, color, RY(Math.PI * 2 * s),
-            T(-65 + 130 * s, 0, 2 + 420 * s * (1 - s)));
-        }
-        const s = (p - 0.65) / 0.35;
-        return {
-          ...piece(mesh, color, T(65 - 130 * s, 0, 2)),
-          alpha: 0.35 + 0.65 * Math.max(clamp01(1 - s * 6), clamp01((s - 0.8) / 0.2)),
-        };
-      });
-    },
-  },
-
-  /* five pins passing the impulse down the line, cradle-style */
-  newton: {
-    dur: 3, ext: { r: 100, z: 70 },
-    scene: (u) => {
-      const A = 0.5;
-      const aL = u < 0.5 ? A * Math.sin(Math.PI * (u * 2)) : 0;
-      const aR = u >= 0.5 ? A * Math.sin(Math.PI * ((u - 0.5) * 2)) : 0;
-      const out = [];
-      for (let i = 0; i < 5; i++) {
-        const x = (i - 2) * 31;
-        if (i === 0 && aL > 0) {
-          out.push(piece(CYL, COLOR.red, T(15, 0, 0), RY(-aL), T(x - 15, 0, 0)));
-        } else if (i === 4 && aR > 0) {
-          out.push(piece(CYL, COLOR.red, T(-15, 0, 0), RY(aR), T(x + 15, 0, 0)));
-        } else {
-          out.push(piece(CYL, COLOR.red, T(x, 0, 0)));
-        }
-      }
-      return out;
-    },
-  },
-
-  /* a ring of cubes inching forward one hop at a time */
-  caterpillar: {
-    dur: 6, ext: { r: 78, z: 50 },
-    scene: (u) => {
-      const N = 8, R = 55;
-      return Array.from({ length: N }, (_, i) => {
-        // each cube hops forward once per loop; the last hop lands
-        // just before the seam, so u=1 matches u=0 rotated one slot
-        const step = clamp01((u - i / N) / 0.12);
-        const th = (Math.PI * 2 / N) * (i + easeInOut(step));
-        const hop = 14 * Math.sin(Math.PI * step);
-        return piece(CUBE, i % 2 ? COLOR.lightblue : COLOR.blue,
-          RZ(th), T(R * Math.cos(th), R * Math.sin(th), hop));
-      });
-    },
-  },
-
-  /* the whole set marching around the ring, bobbing in step */
-  parade: {
-    dur: 8, ext: { r: 115, z: 45 },
-    scene: (u) => {
-      const kinds = [
-        [PLANK75, COLOR.blue], [CUBE, COLOR.lightblue], [CYL, COLOR.red],
-        [ORANGE, COLOR.orange], [PLANK60, COLOR.blue],
-      ];
-      return kinds.map(([mesh, color], i) => {
-        const th = Math.PI * 2 * (u + i / 5);
-        const hop = 6 * Math.abs(Math.sin(Math.PI * (u * 10 + i)));
-        return piece(mesh, color, RZ(th + Math.PI / 2),
-          T(75 * Math.cos(th), 75 * Math.sin(th), hop));
-      });
-    },
-  },
-
-  /* two planks crossed on a cylinder mast, turning in the wind */
-  windmill: {
-    dur: 6, ext: { r: 62, z: 170 },
-    scene: (u) => {
-      const a = u * Math.PI * 2;
-      const blade = (k) => piece(PLANK75, COLOR.blue,
-        T(0, 0, -7.5), RY(a + k * Math.PI / 2), T(0, -25, 125));
-      return [
-        piece(CYL, COLOR.red),
-        piece(CYL, COLOR.red, T(0, 0, 60)),
-        piece(CUBE, COLOR.lightblue, T(0, -25, 110)),
-        blade(0), blade(1),
-      ];
-    },
-  },
-
-  /* three spiral arms of cubes turning around a red core */
-  galaxy: {
-    dur: 10, ext: { r: 110, z: 55 },
-    scene: (u) => {
-      const out = [piece(CYL, COLOR.red)];
-      for (let k = 0; k < 3; k++) for (let i = 0; i < 5; i++) {
-        const th = Math.PI * 2 * u + k * (Math.PI * 2 / 3) + i * 0.45;
-        const r = 22 + i * 17;
-        out.push(piece(CUBE, i % 2 ? COLOR.lightblue : COLOR.blue, RZ(th),
-          T(r * Math.cos(th), r * Math.sin(th), 4 + 4 * Math.sin(Math.PI * 4 * u + i))));
-      }
-      return out;
-    },
-  },
-
-  /* the full stack swaying through a tremor and holding on */
-  quake: {
-    dur: 5, ext: { r: 65, z: 155 },
-    scene: (u) => {
-      const amp = 0.13 * Math.pow(Math.sin(Math.PI * u), 2);
-      const stack = [
-        [PLANK75, COLOR.blue, 0], [ORANGE, COLOR.orange, 15],
-        [CUBE, COLOR.lightblue, 39], [PLANK60, COLOR.blue, 69],
-        [CYL, COLOR.red, 84],
-      ];
-      return stack.map(([mesh, color, z], k) =>
-        piece(mesh, color, T(0, 0, z),
-          RY(amp * Math.sin(Math.PI * 2 * 3 * u - k * 0.5))));
-    },
-  },
-
-  /* a flock of blocks on tangled whole-number orbits */
-  swarm: {
-    dur: 12, ext: { r: 95, z: 135 },
-    scene: (u) => {
-      const out = [];
-      for (let i = 0; i < 12; i++) {
-        const f = (k) => 1 + ((i * 7 + k * 5) % 3); // frequencies 1–3
-        const ph = (k) => (i * 0.37 + k * 0.61) % 1;
-        const x = 70 * Math.sin(Math.PI * 2 * (f(0) * u + ph(0)));
-        const y = 70 * Math.sin(Math.PI * 2 * (f(1) * u + ph(1)));
-        const z = 55 + 42 * Math.sin(Math.PI * 2 * (f(2) * u + ph(2)));
-        const [mesh, color] = i % 4 === 3
-          ? [ORANGE, COLOR.orange] : [CUBE, COLOR.lightblue];
-        out.push(piece(mesh, color,
-          RZ(Math.PI * 2 * (u * f(0) + i / 5)), T(x, y, z)));
-      }
-      return out;
-    },
-  },
-
-  /* a little house assembling itself: walls, door, lintel, roof */
-  hus: {
-    dur: 7, ext: { r: 55, z: 175 },
-    scene: (u) => {
-      const tau = u < 0.5 ? u * 2 : (1 - u) * 2; // palindrome
-      const drop = (mk, slot) => {
-        const p = easeOut(window01(tau, slot * 0.13, 0.2));
-        return mk(175 * (1 - p));
-      };
-      return [
-        drop((dz) => piece(UPRIGHT60, COLOR.blue, T(-22, 0, dz)), 0),
-        drop((dz) => piece(UPRIGHT60, COLOR.blue, T(22, 0, dz)), 1),
-        drop((dz) => piece(CUBE, COLOR.lightblue, T(0, 0, dz)), 2),
-        drop((dz) => piece(PLANK75, COLOR.blue, T(0, 0, 60 + dz)), 3),
-        drop((dz) => piece(ORANGE, COLOR.orange, RY(Math.PI / 4), T(0, 0, 91 + dz)), 4),
-      ];
-    },
-  },
-
-  /* a bricklayer's wall going up in running bond, then coming down */
-  mur: {
-    dur: 8, ext: { r: 80, z: 170 },
-    scene: (u) => {
-      const tau = u < 0.5 ? u * 2 : (1 - u) * 2;
-      const lay = (mesh, color, x, z, slot) => {
-        const p = easeOut(window01(tau, slot * 0.11, 0.18));
-        return piece(mesh, color, T(x, 0, z + (165 - z) * (1 - p)));
-      };
-      return [
-        lay(PLANK75, COLOR.blue, -30, 0, 0),
-        lay(PLANK60, COLOR.blue, 40, 0, 1),
-        lay(PLANK60, COLOR.blue, -38, 15, 2),
-        lay(PLANK75, COLOR.blue, 30, 15, 3),
-        lay(ORANGE, COLOR.orange, -15, 30, 4),
-        lay(CUBE, COLOR.lightblue, 35, 30, 5),
-      ];
-    },
-  },
-
-  /* a wall clock: the minute hand laps the hour hand twelve to one */
-  klokke: {
-    dur: 24, ext: { r: 55, z: 150 },
-    scene: (u) => {
-      const hand = (mesh, pivot, y, revs) =>
-        piece(mesh, COLOR.blue, T(pivot, 0, -7.5),
-          RY(Math.PI * 2 * revs * u), T(0, y, 90));
-      return [
-        piece(CYL, COLOR.red, RX(Math.PI / 2), T(0, 30, 90)), // face-on pin
-        hand(PLANK60, 22, -20, 1),   // hour
-        hand(PLANK75, 30, -38, 12),  // minute
-      ];
-    },
-  },
-
-  /* a ferris wheel: crossed spokes, gondolas hanging level */
-  ferris: {
-    dur: 10, ext: { r: 58, z: 150 },
-    scene: (u) => {
-      const a = u * Math.PI * 2;
-      const out = [
-        piece(CYL, COLOR.red, T(0, 18, 0)),
-        piece(CYL, COLOR.red, T(0, 18, 60)),
-        piece(CUBE, COLOR.lightblue, T(0, 0, 90)),
-        piece(PLANK75, COLOR.blue, T(0, 0, -7.5), RY(a), T(0, 0, 105)),
-        piece(PLANK75, COLOR.blue, T(0, 0, -7.5), RY(a + Math.PI / 2), T(0, 0, 105)),
-      ];
-      for (let k = 0; k < 4; k++) {
-        const phi = a + k * (Math.PI / 2);
-        out.push(piece(CUBE, k % 2 ? COLOR.orange : COLOR.lightblue,
-          T(37.5 * Math.cos(phi), 0, 105 - 37.5 * Math.sin(phi) - 34)));
-      }
-      return out;
-    },
-  },
-
-  /* a three-cube cascade, thrown and caught forever */
-  sjonglering: {
-    dur: 3.6, ext: { r: 55, z: 135 },
-    scene: (u) => {
-      const path = (t) => {
-        if (t < 0.38) { const s = t / 0.38; return [-38 + 76 * s, 22 + 380 * s * (1 - s)]; }
-        if (t < 0.5) { const s = (t - 0.38) / 0.12; return [38 - 6 * Math.sin(Math.PI * s), 22 - 6 * Math.sin(Math.PI * s)]; }
-        if (t < 0.88) { const s = (t - 0.5) / 0.38; return [38 - 76 * s, 22 + 380 * s * (1 - s)]; }
-        const s = (t - 0.88) / 0.12;
-        return [-38 + 6 * Math.sin(Math.PI * s), 22 - 6 * Math.sin(Math.PI * s)];
-      };
-      const colors = [COLOR.lightblue, COLOR.orange, COLOR.lightblue];
-      return colors.map((c, i) => {
-        const t = (u + i / 3) % 1;
-        const [x, z] = path(t);
-        return piece(i === 1 ? ORANGE : CUBE, c, RY(Math.PI * 2 * 2 * t), T(x, 0, z - (i === 1 ? 12 : 15)));
-      });
-    },
-  },
-
-  /* a waterfall of cubes, splashing at the foot */
-  fossefall: {
-    dur: 4, ext: { r: 65, z: 160 },
-    scene: (u) => {
-      const out = [];
-      for (let c = 0; c < 3; c++) for (let j = 0; j < 3; j++) {
-        const p = (u * 2 + j / 3 + c * 0.17) % 1;
-        const alpha = Math.min(p / 0.12, (1 - p) / 0.12, 1);
-        out.push({
-          ...piece(CUBE, COLOR.lightblue, T((c - 1) * 32, 0, 145 * (1 - p))),
-          alpha: clamp01(alpha),
-        });
-      }
-      for (const s of [-1, 1]) {
-        const hop = 10 * Math.abs(Math.sin(Math.PI * (u * 6 + (s + 1) / 2)));
-        out.push(piece(CUBE, COLOR.lightblue, T(s * 48, 0, hop)));
-      }
-      return out;
-    },
-  },
-
-  /* the rolling square: a cube tumbling edge over edge down the planks */
-  tumle: {
-    dur: 4, ext: { r: 85, z: 75 },
-    scene: (u) => {
-      const t = u * 4, k = Math.floor(Math.min(t, 3.999)), s = t - k;
-      const th = (Math.PI / 2) * easeInOut(Math.min(1, s / 0.8));
-      const alpha = clamp01(Math.min(u / 0.1, (1 - u) / 0.1) * 1.5);
-      return [
-        piece(PLANK75, COLOR.blue, T(-37.5, 0, 0)),
-        piece(PLANK75, COLOR.blue, T(37.5, 0, 0)),
-        { ...piece(CUBE, COLOR.lightblue,
-          T(-15, 0, 0), RY(th), T(-45 + 30 * k, 0, 15)), alpha },
-      ];
-    },
-  },
-
-  /* the row doing the wave: a hop with a lean, passed down the line */
-  takt: {
-    dur: 4, ext: { r: 125, z: 60 },
-    scene: (u) => {
-      const kinds = [
-        [PLANK75, COLOR.blue, -85], [CUBE, COLOR.lightblue, -25],
-        [CYL, COLOR.red, 10], [ORANGE, COLOR.orange, 50], [PLANK60, COLOR.blue, 100],
-      ];
-      return kinds.map(([mesh, color, x], i) => {
-        const p = (u * 2 - i * 0.15 % 1 + 1) % 1;
-        const lift = Math.pow(Math.max(0, Math.sin(Math.PI * 2 * p)), 2);
-        return piece(mesh, color, RY(0.1 * Math.sin(Math.PI * 2 * p)),
-          T(x, 0, 12 * lift));
-      });
-    },
-  },
-
-  /* rola bola: the plank balancing on the rolling cylinder, cube riding */
-  balanse: {
-    dur: 5, ext: { r: 62, z: 80 },
-    scene: (u) => {
-      const x = 20 * Math.sin(u * Math.PI * 2);
-      const a = 0.3 * Math.sin(u * Math.PI * 2);
-      return [
-        piece(CYL, COLOR.red, RX(Math.PI / 2), T(x, 30, 15)),
-        piece(PLANK75, COLOR.blue, RY(a), T(-x * 0.5, 0, 30)),
-        piece(CUBE, COLOR.lightblue, T(24, 0, 15), RY(a), T(-x * 0.5, 0, 30)),
-      ];
-    },
-  },
-
-  /* a rocket goes up; six sparks come down */
-  fyrverkeri: {
-    dur: 5, ext: { r: 95, z: 205 },
-    scene: (u) => {
-      const out = [piece(ORANGE, COLOR.orange)]; // the mortar
-      const p1 = clamp01(u / 0.32);
-      const rocketAlpha = u < 0.32
-        ? clamp01(u / 0.04)
-        : clamp01(1 - (u - 0.32) / 0.06);
-      if (rocketAlpha > 0.01) {
-        out.push({
-          ...piece(CYL, COLOR.red, T(0, 0, 24 + 130 * easeOut(p1))),
-          alpha: rocketAlpha,
-        });
-      }
-      if (u > 0.32) {
-        const tb = clamp01((u - 0.32) / 0.45);
-        const e = easeOut(tb);
-        for (let k = 0; k < 6; k++) {
-          const phi = (k / 6) * Math.PI * 2;
-          const alpha = clamp01((1 - tb) * 1.2) * (tb < 1 ? 1 : 0);
-          if (alpha <= 0.01) continue;
-          out.push({
-            ...piece(CUBE, k % 2 ? COLOR.lightblue : COLOR.orange,
-              RZ(tb * Math.PI * 2),
-              T(Math.cos(phi) * 80 * e, 0,
-                184 + Math.sin(phi) * 60 * e - 95 * tb * tb)),
-            alpha,
-          });
-        }
-      }
-      return out;
-    },
-  },
-
-  /* the tower detonates, scatters, and un-explodes back together */
-  bigbang: {
-    dur: 8, ext: { r: 110, z: 180 },
-    scene: (u) => {
-      const m = u > 0.5 ? 1 - u : u;                // palindrome
-      const q = easeInOut(window01(m, 0.08, 0.34)); // 0 tower → 1 scattered
-      const fly = (mesh, color, home, scatter, spins) => {
-        const p = home.map((v, k) => v + (scatter[k] - v) * q);
-        return piece(mesh, color, RZ(q * Math.PI * 2 * spins),
-          T(p[0], p[1], p[2] + 70 * Math.sin(Math.PI * q)));
-      };
-      return [
-        fly(PLANK75, COLOR.blue, [0, 0, 0], [-72, 28, 0], 1),
-        fly(CUBE, COLOR.lightblue, [0, 0, 15], [58, -30, 0], 2),
-        fly(ORANGE, COLOR.orange, [0, 0, 45], [34, 58, 0], 1),
-        fly(CYL, COLOR.red, [0, 0, 69], [-42, -56, 0], 2),
+        piece(CUBE, COLOR.lightblue, T(0, 0, 15)),
+        piece(ORANGE, COLOR.orange, T(0, 0, -12),
+          RY(Math.PI * 2 * u), T(0, 0, SPRETT.zc(t))),
+        // the witnesses, wide of the flight path
+        piece(CYL, COLOR.red, T(52, -52, 0)),
+        piece(UPRIGHT60, COLOR.blue, T(-56, 48, 0)),
       ];
     },
   },
 };
 
-/* ---- camera, light, colors ---- */
+/* ---- camera and the two lights ---- */
 
 const K = Math.SQRT1_2;            // azimuth 45°
 const SIN_E = 0.5, COS_E = Math.sqrt(3) / 2; // elevation 30°
-const LIGHT = (() => {
-  const l = [0.45, 0.25, 1.05];    // hard sun from the front-upper-right
-  const n = Math.hypot(...l);
-  return l.map((v) => v / n);
-})();
-const KEY = [1.16, 1.11, 1.04];    // slightly warm sun, tops read full
+
+const norm3 = (v) => {
+  const n = Math.hypot(...v);
+  return v.map((x) => x / n);
+};
+
+/* two directional lights, nothing else — no ambient, no environment.
+ * A warm key from the front upper right, a cool low fill from the
+ * back left. Each casts its own hard shadow. */
+const LIGHTS = [
+  { dir: norm3([0.56, 0.28, 0.9]), rgb: [1.22, 1.08, 0.94], shadow: 0.4 },
+  { dir: norm3([-0.76, -0.3, 0.6]), rgb: [0.4, 0.5, 0.68], shadow: 0.15 },
+];
 
 const project = ([x, y, z]) => [(x - y) * K, (x + y) * K * SIN_E - z * COS_E];
 const nearness = ([x, y, z]) => (x + y) * K * COS_E + z * SIN_E;
@@ -779,12 +362,16 @@ function hexRgb(c) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-/* pure directional shading: gamma-correct Lambert, no ambient at all —
- * faces turned from the sun fall to black */
+/* gamma-correct Lambert under the two lights; a face turned from
+ * both falls to black */
 function shade(base, n) {
-  const lit = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
-  return `rgb(${hexRgb(base).map((c, i) => {
-    const v = Math.pow(c / 255, 2.2) * KEY[i] * lit;
+  const rgb = hexRgb(base);
+  return `rgb(${rgb.map((c, i) => {
+    let v = 0;
+    for (const l of LIGHTS) {
+      const lit = Math.max(0, n[0] * l.dir[0] + n[1] * l.dir[1] + n[2] * l.dir[2]);
+      v += Math.pow(c / 255, 2.2) * l.rgb[i] * lit;
+    }
     return Math.round(255 * Math.pow(Math.min(1, v), 1 / 2.2));
   }).join(",")})`;
 }
@@ -796,11 +383,13 @@ export function bounds(ext, scale) {
   for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const z of [0, ext.z]) {
     pts.push(project([sx * ext.r, sy * ext.r, z]));
   }
-  // room for the hard shadows, whichever way the sun casts them
-  const dx = -ext.z * (LIGHT[0] / LIGHT[2]);
-  const dy = -ext.z * (LIGHT[1] / LIGHT[2]);
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
-    pts.push(project([sx * ext.r + dx, sy * ext.r + dy, 0]));
+  // room for the hard shadows of both lights
+  for (const l of LIGHTS) {
+    const dx = -ext.z * (l.dir[0] / l.dir[2]);
+    const dy = -ext.z * (l.dir[1] / l.dir[2]);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+      pts.push(project([sx * ext.r + dx, sy * ext.r + dy, 0]));
+    }
   }
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const pad = 6;
@@ -829,27 +418,29 @@ export function drawScene(ctx, name, u, scale, inkShadow) {
     return { ...p, faces, near: near / verts.length };
   }).sort((a, b) => a.near - b.near);
 
-  // hard sun shadows: project the geometry to the ground along the light
+  // hard shadows: project the geometry to the ground along each light
   ctx.fillStyle = inkShadow;
-  for (const p of solid) {
-    const path = new Path2D();
-    for (const f of p.faces) {
-      const pts = f.map((v) => {
-        const t = v[2] / LIGHT[2];
-        return px(project([v[0] - LIGHT[0] * t, v[1] - LIGHT[1] * t, 0]));
-      });
-      let area = 0;
-      for (let i = 0; i < pts.length; i++) {
-        const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
-        area += x1 * y2 - x2 * y1;
+  for (const l of LIGHTS) {
+    for (const p of solid) {
+      const path = new Path2D();
+      for (const f of p.faces) {
+        const pts = f.map((v) => {
+          const t = v[2] / l.dir[2];
+          return px(project([v[0] - l.dir[0] * t, v[1] - l.dir[1] * t, 0]));
+        });
+        let area = 0;
+        for (let i = 0; i < pts.length; i++) {
+          const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+          area += x1 * y2 - x2 * y1;
+        }
+        const poly = area < 0 ? [...pts].reverse() : pts; // uniform winding
+        path.moveTo(poly[0][0], poly[0][1]);
+        for (let i = 1; i < poly.length; i++) path.lineTo(poly[i][0], poly[i][1]);
+        path.closePath();
       }
-      const poly = area < 0 ? [...pts].reverse() : pts; // uniform winding
-      path.moveTo(poly[0][0], poly[0][1]);
-      for (let i = 1; i < poly.length; i++) path.lineTo(poly[i][0], poly[i][1]);
-      path.closePath();
+      ctx.globalAlpha = l.shadow * (p.alpha ?? 1);
+      ctx.fill(path);
     }
-    ctx.globalAlpha = 0.42 * (p.alpha ?? 1);
-    ctx.fill(path);
   }
   ctx.globalAlpha = 1;
 
@@ -933,14 +524,16 @@ export function drawScene2d(ctx, name, u, scale, inkShadow) {
     return { ...p, faces, y: ySum / count, minX, maxX, minZ };
   }).sort((a, b2) => b2.y - a.y); // camera at -y: draw the far side first
 
-  // ground shadow bars, nudged sunward and fading with altitude
+  // ground shadow bars, one per light, nudged its way and fading with altitude
   ctx.fillStyle = inkShadow;
-  for (const p of solid) {
-    ctx.globalAlpha = 0.38 * (p.alpha ?? 1) * clamp01(1 - p.minZ / 140);
-    const [x0] = px([p.minX, 0, 0]);
-    const [x1] = px([p.maxX, 0, 0]);
-    const off = -p.minZ * (LIGHT[0] / LIGHT[2]) * scale;
-    ctx.fillRect(x0 + off, b.oy + 1, x1 - x0, 3);
+  for (const l of LIGHTS) {
+    for (const p of solid) {
+      ctx.globalAlpha = l.shadow * 0.9 * (p.alpha ?? 1) * clamp01(1 - p.minZ / 140);
+      const [x0] = px([p.minX, 0, 0]);
+      const [x1] = px([p.maxX, 0, 0]);
+      const off = -p.minZ * (l.dir[0] / l.dir[2]) * scale;
+      ctx.fillRect(x0 + off, b.oy + 1, x1 - x0, 3);
+    }
   }
   ctx.globalAlpha = 1;
 
@@ -969,6 +562,8 @@ export function drawScene2d(ctx, name, u, scale, inkShadow) {
   }
   ctx.globalAlpha = 1;
 }
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 /* ---- custom element ---- */
 
