@@ -149,7 +149,7 @@
       <span class="stage"></span>
       <span class="label">
         <span class="name">${name}</span>
-        <span class="meta">${toy.scene(0).length === 1 ? "1 piece" : toy.scene(0).length + " pieces"} · ${toy.dur}s</span>
+        <span class="meta">${toy.scene(0).length === 1 ? "1 piece" : toy.scene(0).length + " pieces"} · ${+toy.dur.toFixed(2)}s</span>
       </span>
       <span class="snippet"></span>`;
     card.addEventListener("click", async () => {
