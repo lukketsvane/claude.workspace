@@ -1,0 +1,372 @@
+name: Astra Literary v4 + Actual Raster Figures
+
+on:
+  push:
+    paths:
+      - '.github/workflows/astra-literary-v4-raster.yml'
+      - 'astra-literary/prompts/*-v4.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  copilot-requests: write
+
+jobs:
+  rewrite-judge-imagegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      COPILOT_MODEL: gpt-6-astra
+      COPILOT_ALLOW_ALL: 'true'
+      OPENBLAS_NUM_THREADS: '4'
+      OMP_NUM_THREADS: '4'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Astra and image-generation tools
+        run: |
+          set -euo pipefail
+          npm install -g @github/copilot
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils libopenblas-dev jq
+
+      - name: Load latest archived FORMLAERE source
+        run: |
+          set -euo pipefail
+          cp astra-literary/latest/final.tex source.tex
+          cp astra-literary/latest/final-judge.md source-judge.md
+          cp astra-literary/latest/literary-critique.md literary-critique.md
+          test -s source.tex
+          test -s source-judge.md
+
+      - name: Fetch Tractatus benchmark texts
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/german/Logisch-philosophische%20Abhandlung.pdf' -o wittgenstein-de.pdf
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/english/Tractatus%20Logico-Philosophicus%20%28English%29.pdf' -o wittgenstein-en.pdf
+          pdftotext -layout wittgenstein-de.pdf wittgenstein-de.txt
+          pdftotext -layout wittgenstein-en.pdf wittgenstein-en.txt
+
+      - name: Install strict Astra-output extractors
+        run: |
+          cat > extract_latex.py <<'PY'
+          import re, sys
+          from pathlib import Path
+
+          raw = Path(sys.argv[1]).read_text(errors='replace')
+          out = Path(sys.argv[2])
+
+          blocks = re.findall(r'```(?:latex|tex)?\s*\n(.*?)```', raw, flags=re.I|re.S)
+          candidates = [b.strip() for b in blocks if '\\mainprop{' in b and '\\prop{' in b]
+
+          if candidates:
+              text = max(candidates, key=len)
+          else:
+              start = raw.find('\\silentchapter{Proposisjonar}{proposisjonar}')
+              if start < 0:
+                  raise SystemExit('No FORMLAERE LaTeX start marker found')
+              tail = raw[start:].splitlines()
+              hits = [i for i, line in enumerate(tail) if '\\mainprop{' in line or '\\prop{' in line]
+              if not hits:
+                  raise SystemExit('No proposition lines found')
+              text = '\n'.join(tail[:max(hits)+1]).strip()
+
+          mains = re.findall(r'\\mainprop\{([^}]+)\}', text)
+          props = re.findall(r'\\prop\{([^}]+)\}', text)
+          ids = mains + props
+          if len(mains) < 4 or len(props) < 16:
+              raise SystemExit(f'Too little primary text: {len(mains)} main, {len(props)} child propositions')
+          if len(ids) != len(set(ids)):
+              raise SystemExit('Duplicate proposition numbers')
+          banned = ['Reparasjon utført', 'Ferdig LaTeX', 'Nøkkelreparasjonar', 'VERDICT:', '\\documentclass']
+          if any(x in text for x in banned):
+              raise SystemExit('Meta-output or standalone-document wrapper found in candidate')
+          if text.count('{') != text.count('}'):
+              raise SystemExit('Unbalanced braces')
+          out.write_text(text.rstrip() + '\n')
+          print(f'EXTRACTED_LATEX_OK mains={len(mains)} children={len(props)} bytes={len(text)}')
+          PY
+
+          cat > extract_plan.py <<'PY'
+          import json, re, sys
+          from pathlib import Path
+
+          raw = Path(sys.argv[1]).read_text(errors='replace')
+          tex = Path(sys.argv[2]).read_text()
+          out = Path(sys.argv[3])
+          valid_props = set(re.findall(r'\\(?:mainprop|prop)\{([^}]+)\}', tex))
+
+          found = []
+          dec = json.JSONDecoder()
+          for i, ch in enumerate(raw):
+              if ch != '[':
+                  continue
+              try:
+                  obj, end = dec.raw_decode(raw[i:])
+              except Exception:
+                  continue
+              if isinstance(obj, list):
+                  found.append(obj)
+          if not found:
+              raise SystemExit('No JSON array found in Astra figure response')
+          plans = [p for p in found if len(p) == 10 and all(isinstance(x, dict) for x in p)]
+          if not plans:
+              raise SystemExit('No ten-item JSON figure plan found')
+          plan = max(plans, key=lambda p: sum(len(str(x)) for x in p))
+          expected = [f'figure-{i:02d}' for i in range(1, 11)]
+          if [x.get('file') for x in plan] != expected:
+              raise SystemExit('Figure filenames are not figure-01..figure-10')
+          for x in plan:
+              if x.get('after') not in valid_props:
+                  raise SystemExit(f"Unknown proposition placement: {x.get('after')}")
+              if not isinstance(x.get('prompt'), str) or len(x['prompt']) < 180:
+                  raise SystemExit(f"Prompt too short for {x.get('file')}")
+              if not isinstance(x.get('purpose'), str) or not x['purpose'].strip():
+                  raise SystemExit(f"Missing purpose for {x.get('file')}")
+              if not isinstance(x.get('seed'), int):
+                  raise SystemExit(f"Missing integer seed for {x.get('file')}")
+          out.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n')
+          print('EXTRACTED_FIGURE_PLAN_OK')
+          PY
+
+      - name: Full Astra rewrite from accumulated criticism
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          {
+            cat astra-literary/prompts/rewrite-v4.md
+            printf '\n\n--- SISTE DOM ---\n'
+            cat source-judge.md
+            printf '\n\n--- TIDLEGARE KOMPARATIV HOVUDKRITIKK ---\n'
+            cat literary-critique.md
+            printf '\n\n--- KJELDE SOM SKAL REARKITEKTERAST ---\n'
+            cat source.tex
+            printf '\n\n--- BENCHMARK ORIGINALTYSK ---\n'
+            cat wittgenstein-de.txt
+            printf '\n\n--- BENCHMARK ENGELSK ---\n'
+            cat wittgenstein-en.txt
+          } > rewrite-input.txt
+
+          cat rewrite-input.txt | copilot --yolo -s | tee candidate-0.raw.txt
+          if ! python3 extract_latex.py candidate-0.raw.txt candidate-0.tex; then
+            {
+              cat astra-literary/prompts/rewrite-v4.md
+              printf '\n\nDIN FØRRE OUTPUT VAR UGYLDIG: han mangla ein rein fullstendig primærtekst. SVAR NO BERRE MED HEILE LATEX-TRAKTATEN.\n\n'
+              cat source.tex
+              printf '\n\n--- SISTE DOM ---\n'
+              cat source-judge.md
+            } > rewrite-retry-input.txt
+            cat rewrite-retry-input.txt | copilot --yolo -s | tee candidate-0.retry.raw.txt
+            python3 extract_latex.py candidate-0.retry.raw.txt candidate-0.tex
+          fi
+
+      - name: Judge and repair with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          judge_candidate() {
+            local candidate="$1"
+            local judge="$2"
+            {
+              cat astra-literary/prompts/judge-v4.md
+              printf '\n\n--- KANDIDAT ---\n'
+              cat "$candidate"
+              printf '\n\n--- BENCHMARK ORIGINALTYSK ---\n'
+              cat wittgenstein-de.txt
+              printf '\n\n--- BENCHMARK ENGELSK ---\n'
+              cat wittgenstein-en.txt
+            } > judge-input.txt
+            cat judge-input.txt | copilot --yolo -s | tee "$judge.raw"
+            python3 - "$judge.raw" "$judge" <<'PY'
+          import re, sys
+          from pathlib import Path
+          s = Path(sys.argv[1]).read_text(errors='replace')
+          m = re.search(r'(?m)^VERDICT: (?:PASS|FAIL)\s*$', s)
+          if not m:
+              raise SystemExit('Judge did not emit a verdict')
+          Path(sys.argv[2]).write_text(s[m.start():].strip() + '\n')
+          PY
+          }
+
+          judge_candidate candidate-0.tex judge-0.md
+          current='candidate-0.tex'
+          current_judge='judge-0.md'
+
+          for iteration in 1 2 3 4; do
+            if grep -q '^VERDICT: PASS' "$current_judge"; then
+              break
+            fi
+            next="candidate-${iteration}.tex"
+            next_judge="judge-${iteration}.md"
+            {
+              cat astra-literary/prompts/repair-v4.md
+              printf '\n\n--- SISTE DOM SOM MÅ REPARERAST ---\n'
+              cat "$current_judge"
+              printf '\n\n--- HEILE KANDIDATEN ---\n'
+              cat "$current"
+              printf '\n\n--- BENCHMARK ORIGINALTYSK ---\n'
+              cat wittgenstein-de.txt
+            } > repair-input.txt
+            cat repair-input.txt | copilot --yolo -s | tee "candidate-${iteration}.raw.txt"
+            if ! python3 extract_latex.py "candidate-${iteration}.raw.txt" "$next"; then
+              {
+                cat astra-literary/prompts/repair-v4.md
+                printf '\n\nDIN FØRRE OUTPUT VAR UGYLDIG. IKKJE RAPPORTER ENDRINGAR. LEVER BERRE HEILE LATEX-TRAKTATEN.\n\n--- DOM ---\n'
+                cat "$current_judge"
+                printf '\n\n--- KANDIDAT ---\n'
+                cat "$current"
+              } > repair-retry-input.txt
+              cat repair-retry-input.txt | copilot --yolo -s | tee "candidate-${iteration}.retry.raw.txt"
+              python3 extract_latex.py "candidate-${iteration}.retry.raw.txt" "$next"
+            fi
+            judge_candidate "$next" "$next_judge"
+            current="$next"
+            current_judge="$next_judge"
+          done
+
+          cp "$current" final.tex
+          cp "$current_judge" final-judge.md
+          echo "FINAL_VERDICT=$(head -n1 final-judge.md)"
+
+      - name: Astra chooses ten integral figure arguments
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          {
+            cat astra-literary/prompts/figures-raster-v4.md
+            printf '\n\n--- ENDELEG TRAKTAT FOR DENNE RUNDA ---\n'
+            cat final.tex
+          } > figures-input.txt
+          cat figures-input.txt | copilot --yolo -s | tee figure-plan.raw.txt
+          if ! python3 extract_plan.py figure-plan.raw.txt final.tex figure-plan.json; then
+            {
+              cat astra-literary/prompts/figures-raster-v4.md
+              printf '\n\nDIN FØRRE OUTPUT VAR UGYLDIG. SVAR BARE MED DET GYLDIGE JSON-ARRAYET PÅ TI OBJEKT.\n\n'
+              cat final.tex
+            } > figures-retry-input.txt
+            cat figures-retry-input.txt | copilot --yolo -s | tee figure-plan.retry.raw.txt
+            python3 extract_plan.py figure-plan.retry.raw.txt final.tex figure-plan.json
+          fi
+
+      - name: Build pinned open raster image generator
+        run: |
+          set -euo pipefail
+          git clone https://github.com/antirez/iris.c.git /tmp/iris
+          git -C /tmp/iris checkout 9873887d4aa0646c650adc5b86b986d2f653b7e0
+          make -C /tmp/iris blas
+          cd /tmp/iris
+          timeout 1200 bash download_model.sh 4b
+
+      - name: Generate ten ACTUAL raster figures with FLUX.2 Klein 4B
+        run: |
+          set -euo pipefail
+          mkdir -p figures-raster
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+
+          plan = json.loads(Path('figure-plan.json').read_text())
+          for i, item in enumerate(plan, 1):
+              out = Path('figures-raster') / f"{item['file']}.png"
+              prompt = item['prompt'].strip()
+              if 'No text' not in prompt and 'no text' not in prompt:
+                  prompt += ' No text, no labels, no numbers.'
+              print(f"GENERATING {i}/10 {out.name} after {item['after']}", flush=True)
+              cmd = [
+                  './iris', '-d', 'flux-klein-4b',
+                  '-W', '896', '-H', '576', '-s', '6',
+                  '-S', str(item['seed']), '-p', prompt,
+                  '-o', str(Path.cwd() / out)
+              ]
+              subprocess.run(cmd, cwd='/tmp/iris', check=True, timeout=900)
+              if not out.exists() or out.stat().st_size < 10000:
+                  raise RuntimeError(f'Invalid raster output: {out}')
+          PY
+
+          printf 'model=black-forest-labs/FLUX.2-klein-4B\nengine=antirez/iris.c\nengine_commit=9873887d4aa0646c650adc5b86b986d2f653b7e0\nsteps=6\nsize=896x576\nworkflow_run=%s\n' "$GITHUB_RUN_ID" > figures-raster/provenance.txt
+          test "$(find figures-raster -name 'figure-*.png' | wc -l)" -eq 10
+
+      - name: Insert raster figures into the tractate itself
+        run: |
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          plan = json.loads(Path('figure-plan.json').read_text())
+          by_after = {}
+          for x in plan:
+              by_after.setdefault(x['after'], []).append(x)
+
+          out, inserted = [], []
+          pat = re.compile(r'\\(?:mainprop|prop)\{([^}]+)\}')
+          for line in Path('final.tex').read_text().splitlines():
+              out.append(line)
+              m = pat.search(line)
+              if not m:
+                  continue
+              for item in by_after.get(m.group(1), []):
+                  out += [
+                      '', r'\\vspace{5mm}', r'\\begin{center}',
+                      rf'\\includegraphics[width=0.88\\linewidth]{{figures-raster/{item["file"]}.png}}',
+                      r'\\end{center}', r'\\vspace{5mm}', ''
+                  ]
+                  inserted.append(item['file'])
+          if len(inserted) != 10:
+              raise SystemExit(f'Inserted {len(inserted)} figures, expected 10')
+          Path('final-illustrated.tex').write_text('\n'.join(out) + '\n')
+          PY
+
+      - name: Archive complete v4 text, judgments, plan and generated pixels
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rebase origin/main
+
+          run_dir="astra-literary/runs/run-${GITHUB_RUN_ID}"
+          latest_dir='astra-literary/latest'
+          mkdir -p "$run_dir/figures-raster" "$latest_dir/figures-raster"
+          rm -f "$latest_dir/figures-raster"/figure-*.png
+
+          cp source.tex source-judge.md literary-critique.md "$run_dir/"
+          cp candidate-*.tex judge-*.md "$run_dir/" 2>/dev/null || true
+          cp final.tex final-judge.md final-illustrated.tex figure-plan.json "$run_dir/"
+          cp figures-raster/* "$run_dir/figures-raster/"
+
+          cp final.tex final-judge.md literary-critique.md final-illustrated.tex figure-plan.json "$latest_dir/"
+          cp figures-raster/* "$latest_dir/figures-raster/"
+          printf 'workflow_run=%s\nworkflow_version=v4-raster\ncommit=%s\nfinal_verdict=%s\nimage_model=FLUX.2-klein-4B\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$(head -n1 final-judge.md)" > "$latest_dir/provenance.txt"
+          cp "$latest_dir/provenance.txt" "$run_dir/provenance.txt"
+
+          git config user.name 'astra-literary-bot'
+          git config user.email '41840333+lukketsvane@users.noreply.github.com'
+          git add astra-literary/latest "$run_dir"
+          if ! git diff --cached --quiet; then
+            git commit -m "archive Astra v4 + actual raster figures run ${GITHUB_RUN_ID}"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload complete v4 package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-literary-v4-raster
+          path: |
+            source.tex
+            source-judge.md
+            candidate-*.tex
+            judge-*.md
+            final.tex
+            final-judge.md
+            final-illustrated.tex
+            figure-plan.json
+            figures-raster/
+          if-no-files-found: warn
