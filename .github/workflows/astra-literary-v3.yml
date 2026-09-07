@@ -1,0 +1,268 @@
+name: Astra Literary + Figures v3
+
+on:
+  push:
+    paths:
+      - '.github/workflows/astra-literary-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  copilot-requests: write
+
+jobs:
+  rewrite-and-figure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          npm install -g @github/copilot
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils librsvg2-bin
+
+      - name: Load previous Astra result
+        run: |
+          set -euo pipefail
+          cp astra-literary/latest/final.tex source.tex
+          cp astra-literary/latest/final-judge.md previous-judge.md
+          cp astra-literary/latest/literary-critique.md literary-critique.md
+          test -s source.tex
+          test -s previous-judge.md
+
+      - name: Fetch Tractatus references
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/german/Logisch-philosophische%20Abhandlung.pdf' -o wittgenstein-de.pdf
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/english/Tractatus%20Logico-Philosophicus%20%28English%29.pdf' -o wittgenstein-en.pdf
+          pdftotext -layout wittgenstein-de.pdf wittgenstein-de.txt
+          pdftotext -layout wittgenstein-en.pdf wittgenstein-en.txt
+
+      - name: New full rewrite from failed judge
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          cat astra-literary/prompts/repair.md > rewrite-input.txt
+          printf '\n\n--- DOMMEN SOM MÅ REPARERAST ---\n' >> rewrite-input.txt
+          cat previous-judge.md >> rewrite-input.txt
+          printf '\n\n--- KOMPARATIV HOVUDKRITIKK ---\n' >> rewrite-input.txt
+          cat literary-critique.md >> rewrite-input.txt
+          printf '\n\n--- KANDIDATEN SOM SKAL SKRIVAST HEILT OM ---\n' >> rewrite-input.txt
+          cat source.tex >> rewrite-input.txt
+          printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> rewrite-input.txt
+          cat wittgenstein-de.txt >> rewrite-input.txt
+          printf '\n\n--- REFERANSE ENGELSK ---\n' >> rewrite-input.txt
+          cat wittgenstein-en.txt >> rewrite-input.txt
+          cat rewrite-input.txt | copilot --yolo -s | tee candidate-0.tex
+          test -s candidate-0.tex
+
+      - name: Judge and iterate again with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+
+          judge_candidate () {
+            local candidate="$1"
+            local judge="$2"
+            cat astra-literary/prompts/judge.md > judge-input.txt
+            printf '\n\n--- KANDIDAT ---\n' >> judge-input.txt
+            cat "$candidate" >> judge-input.txt
+            printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> judge-input.txt
+            cat wittgenstein-de.txt >> judge-input.txt
+            printf '\n\n--- REFERANSE ENGELSK ---\n' >> judge-input.txt
+            cat wittgenstein-en.txt >> judge-input.txt
+            cat judge-input.txt | copilot --yolo -s | tee "$judge"
+            test -s "$judge"
+          }
+
+          judge_candidate candidate-0.tex judge-0.md
+          current='candidate-0.tex'
+          current_judge='judge-0.md'
+
+          for iteration in 1 2 3 4 5; do
+            if grep -q '^VERDICT: PASS' "$current_judge"; then
+              break
+            fi
+
+            next="candidate-${iteration}.tex"
+            next_judge="judge-${iteration}.md"
+            cat astra-literary/prompts/repair.md > repair-input.txt
+            printf '\n\n--- SISTE DOM ---\n' >> repair-input.txt
+            cat "$current_judge" >> repair-input.txt
+            printf '\n\n--- HEILE KANDIDATEN SOM SKAL REARKITEKTERAST ---\n' >> repair-input.txt
+            cat "$current" >> repair-input.txt
+            printf '\n\n--- ORIGINALITETSKRAV ---\nBryt strukturelt med Tractatus der FORMLÆRE sitt eige emne krev det. Ikkje løys dommen ved overflatisk omskriving. Ingen ekko av karakteristiske avslutningar, vendingar eller dramaturgi.\n' >> repair-input.txt
+            printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> repair-input.txt
+            cat wittgenstein-de.txt >> repair-input.txt
+            printf '\n\n--- REFERANSE ENGELSK ---\n' >> repair-input.txt
+            cat wittgenstein-en.txt >> repair-input.txt
+            cat repair-input.txt | copilot --yolo -s | tee "$next"
+            test -s "$next"
+            judge_candidate "$next" "$next_judge"
+            current="$next"
+            current_judge="$next_judge"
+          done
+
+          cp "$current" final.tex
+          cp "$current_judge" final-judge.md
+          test -s final.tex
+          test -s final-judge.md
+
+      - name: Astra generates ten integral figures as SVG
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          cat astra-literary/prompts/figures.md > figure-input.txt
+          printf '\n\n--- ENDELEG KANDIDAT FOR DENNE RUNDA ---\n' >> figure-input.txt
+          cat final.tex >> figure-input.txt
+          cat figure-input.txt | copilot --yolo -s | tee figures-generator.raw.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('figures-generator.raw.py').read_text().strip()
+          if s.startswith('```'):
+              lines = s.splitlines()[1:]
+              if lines and lines[-1].strip() == '```':
+                  lines = lines[:-1]
+              s = '\n'.join(lines)
+          Path('figures-generator.py').write_text(s + '\n')
+          PY
+
+          python3 -m py_compile figures-generator.py
+          python3 figures-generator.py
+
+      - name: Validate and render figures
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          manifest = json.loads(Path('figures/figure-manifest.json').read_text())
+          assert isinstance(manifest, list) and len(manifest) == 10
+          expected = [f'figure-{i:02d}' for i in range(1, 11)]
+          assert [x['file'] for x in manifest] == expected
+
+          tex = Path('final.tex').read_text()
+          props = set(re.findall(r'\\(?:mainprop|prop)\{([^}]+)\}', tex))
+
+          for item in manifest:
+              assert item['after'] in props, f"unknown proposition {item['after']}"
+              svg = Path('figures') / (item['file'] + '.svg')
+              assert svg.exists()
+              text = svg.read_text()
+              assert '<svg' in text and 'viewBox="0 0 1600 1000"' in text
+          PY
+
+          for svg in figures/figure-*.svg; do
+            base="${svg%.svg}"
+            rsvg-convert -w 2400 -h 1500 "$svg" -o "$base.png"
+            rsvg-convert -f pdf "$svg" -o "$base.pdf"
+          done
+
+      - name: Insert figures into the tractate itself
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          manifest = json.loads(Path('figures/figure-manifest.json').read_text())
+          by_after = {}
+          for item in manifest:
+              by_after.setdefault(item['after'], []).append(item)
+
+          lines = Path('final.tex').read_text().splitlines()
+          out = []
+          inserted = []
+          pat = re.compile(r'\\(?:mainprop|prop)\{([^}]+)\}')
+
+          for line in lines:
+              out.append(line)
+              m = pat.search(line)
+              if not m:
+                  continue
+              for item in by_after.get(m.group(1), []):
+                  out.extend([
+                      '',
+                      r'\vspace{4mm}',
+                      r'\begin{center}',
+                      rf'\includegraphics[width=0.82\linewidth]{{figures/{item["file"]}.pdf}}',
+                      r'\end{center}',
+                      r'\vspace{4mm}',
+                      ''
+                  ])
+                  inserted.append(item['file'])
+
+          assert len(inserted) == 10, f'inserted {len(inserted)} figures, expected 10'
+          Path('final-illustrated.tex').write_text('\n'.join(out) + '\n')
+
+          with Path('figure-plan.md').open('w') as f:
+              f.write('# Figurar integrerte i traktaten\n\n')
+              for item in manifest:
+                  f.write(f"- **{item['file']}** etter **{item['after']}** — {item['purpose']}\n")
+          PY
+
+      - name: Archive complete Astra response chain and figures
+        run: |
+          set -euo pipefail
+          run_dir="astra-literary/runs/run-${GITHUB_RUN_NUMBER}"
+          latest_dir='astra-literary/latest'
+
+          mkdir -p "$run_dir" "$latest_dir"
+          rm -rf "$run_dir/figures" "$latest_dir/figures"
+          mkdir -p "$run_dir/figures" "$latest_dir/figures"
+
+          cp source.tex previous-judge.md literary-critique.md "$run_dir/"
+          cp candidate-*.tex judge-*.md "$run_dir/" 2>/dev/null || true
+          cp final.tex final-judge.md final-illustrated.tex figure-plan.md figures-generator.py "$run_dir/"
+          cp -R figures/. "$run_dir/figures/"
+
+          cp final.tex final-judge.md literary-critique.md final-illustrated.tex figure-plan.md figures-generator.py "$latest_dir/"
+          cp -R figures/. "$latest_dir/figures/"
+
+          printf 'workflow_run=%s\nworkflow_version=v3\ncommit=%s\nprevious_verdict=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$(head -n1 previous-judge.md)" > "$run_dir/provenance.txt"
+          cp "$run_dir/provenance.txt" "$latest_dir/provenance.txt"
+
+          git config user.name 'astra-literary-bot'
+          git config user.email '41840333+lukketsvane@users.noreply.github.com'
+          git add astra-literary/runs astra-literary/latest
+          if ! git diff --cached --quiet; then
+            git commit -m "archive Astra literary + figures iteration ${GITHUB_RUN_NUMBER}"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload complete text + figure artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-literary-figures-v3
+          path: |
+            source.tex
+            previous-judge.md
+            literary-critique.md
+            candidate-*.tex
+            judge-*.md
+            final.tex
+            final-judge.md
+            final-illustrated.tex
+            figure-plan.md
+            figures-generator.py
+            figures/
+          if-no-files-found: warn
