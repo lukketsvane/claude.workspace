@@ -9,42 +9,31 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ ok:false, error:'not authorized' });
   }
 
-  const token = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
-  if (!token) return res.status(500).json({ ok:false, stage:'auth', error:'No AI Gateway credential available' });
-
   try {
-    const r = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'authorization': `Bearer ${token}`,
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-6-astra',
-        messages: [{ role:'user', content:'Reply with exactly ASTRA_OK and nothing else.' }],
-        max_tokens: 32
-      })
+    const { generateText } = await import('ai');
+    const result = await generateText({
+      model: 'openai/gpt-6-astra',
+      prompt: 'Reply with exactly ASTRA_OK and nothing else.',
+      maxOutputTokens: 32,
+      providerOptions: {
+        gateway: { only: ['openai'] }
+      }
     });
 
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      return res.status(200).json({
-        ok:false,
-        stage:'gateway',
-        status:r.status,
-        error:j.error || j.message || j
-      });
-    }
-
-    const choice = j.choices?.[0] || {};
     return res.status(200).json({
-      ok:true,
-      model:j.model || 'openai/gpt-6-astra',
-      text:choice.message?.content || '',
-      finish_reason:choice.finish_reason || null,
-      usage:j.usage || null
+      ok: true,
+      model: 'openai/gpt-6-astra',
+      text: result.text || '',
+      finish_reason: result.finishReason || null,
+      usage: result.usage || null,
+      provider_metadata: result.providerMetadata || null
     });
   } catch (e) {
-    return res.status(500).json({ ok:false, error:String(e?.message || e) });
+    return res.status(200).json({
+      ok:false,
+      stage:'ai-sdk',
+      error:String(e?.message || e),
+      name:e?.name || null
+    });
   }
 };
