@@ -22,7 +22,41 @@ jobs:
           cat > prompt.txt <<'PROMPT'
           Du er logikar, formteoretikar og filosofisk arkitekt. Skriv HEILE kjeldeteksten nedanfor om til eit samanhengande filosofisk verk på presist, naturleg nynorsk.
 
-          Ambisjonen er den same kjensla av nødvendighet, kompresjon, klarleik, rytme og arkitektonisk oppbygging som i Wittgensteins Tractatus Logico-Philosophicus, men utan å kopiere formuleringar eller lage pastisj. Målet er ikkje å høyrest wittgensteinsk ut. Målet er at kvar proposisjon skal verke nødvendig, stå på rett stad, og vere eit faktisk ledd i eit system.
+          Ambisjonen er den same kjensla av nødvendighet, kompresjon, klarleik, rytme og arkitektonisk oppbygging som i Wittgensteins Tractatus Logico-Philosophicus, men utan å kopiere formuleringar eller lage pastisj. Målet er ikkje å høyrest wittgensteinsk ut. Målet er at kvar proposisjon skal verke nødvendig, stå på rett stad, og vere eit faktisk ledd i eitt argument.
+
+          DET VIKTIGASTE KRAVET ER INFERENSIELL KONTINUITET.
+
+          Ikkje skriv ei samling gode aforismar. Skriv ei kjede der kvar proposisjon NATURLEG FØLGJER frå det som alt er etablert. Før du godtek kvar ny proposisjon, skal du stille den stille testen: «Kva i dei føregåande proposisjonane gjer akkurat denne proposisjonen nødvendig no?» Dersom du ikkje kan svare presist, må du anten flytte henne, skrive inn det manglande mellomleddet, omklassifisere henne eller fjerne henne.
+
+          Ingen tankesprang er tillatne. Ingen ny term, distinksjon, kausal påstand eller ontologisk føresetnad får dukke opp berre fordi han blir nyttig seinare. Alt må vere førebudd. Ein lesar skal i prinsippet kunne gå frå proposisjon N til proposisjon N+1 utan å måtte gjette kva som manglar.
+
+          Gjer dette som ein intern proof-pass før endeleg output:
+          1. Bygg eit avhengnadskart for alle proposisjonane.
+          2. Finn proposisjonar som manglar premiss, introduserer nye primitive omgrep, hoppar mellom nivå eller berre står tematisk nær kvarandre.
+          3. Reparer kjeda med færre og sterkare proposisjonar og nødvendige mellomledd.
+          4. Topologisk sorter argumentet slik at ingenting kjem før føresetnadene sine.
+          5. Les deretter HEILE traktaten lineært og krev at overgangen frå kvar proposisjon til den neste kjennest uunngåeleg.
+          Ikkje vis dette arbeidet.
+
+          HIERARKIET ER LOGIKK, IKKJE DEKORASJON.
+
+          Nummeret skal uttrykkje den reelle avhengnaden:
+          - 1, 2, 3 ... er grunnledd som ber kvar sin nødvendig hovuddel av systemet.
+          - 1.1 er direkte utfalding, føresetnad eller konsekvens av 1.
+          - 1.11 er direkte utfalding, føresetnad eller konsekvens av 1.1.
+          - 1.111 er tilsvarande underordna 1.11.
+          - Ein underproposisjon må kunne lesast som eit svar på «kva inneber forelderen?» eller «kvifor følgjer forelderen?».
+          - Syskenproposisjonar skal ha same logiske nivå og ei naturleg intern rekkjefølgje.
+          - Dersom 1.12 eigentleg ikkje høyrer under 1.1, skal ho IKKJE få nummeret 1.12. Flytt eller nummerer på nytt.
+          - Ikkje bruk djup nummerering for å etterlikne Tractatus. Bruk henne berre når avhengnaden faktisk er djup.
+
+          VISUELL HIERARKI:
+          Behald nummeret slik at typesetting kan rykke proposisjonen inn etter djupna. Hovudproposisjonar skal vere nivå 0; .1 nivå 1; .11 nivå 2; .111 nivå 3 osv. I sjølve LaTeX-kjelda skal du i tillegg rykke inn kvar \prop-linje med TO ASCII-MELLOMROM PER HIERARKINIVÅ. Dette er ein eksplisitt strukturell markør for seinare typesetting. Døme:
+          \mainprop{1}{}{...}
+            \prop{1.1}{d}{...}
+              \prop{1.11}{t}{...}
+                \prop{1.111}{t}{...}
+          Innrykket skal alltid samsvare med den logiske djupna. Hovudproposisjonar brukar \mainprop og står utan innrykk.
 
           Rekonstruer argumentets indre maskineri. Les heile teksten som eitt system før du skriv. Finn dei primitive omgrepa, definisjonane, postulata, dei reelle teorema, observasjonane, illustrasjonane, overlapp, manglande mellomledd og eventuelle motseiingar. Ikkje vis denne analysen. Bruk han til å byggje teksten på nytt.
 
@@ -30,23 +64,24 @@ jobs:
 
           Hald systemet d = definisjon, a = postulat, t = teorem, o = observasjon, i = illustrasjon, men klassifiser strengt. Eit teorem må faktisk følgje frå tidlegare proposisjonar. Eit postulat er noko systemet treng men ikkje kan utleie. Ein observasjon er empirisk eller motiverande, ikkje logisk nødvendig. Ein definisjon fastset bruk. Ei illustrasjon er berre eit døme.
 
-          Bygg nummereringa hierarkisk slik at 1 er eit verkeleg grunnledd; 1.1, 1.2 osv. utfaldar det; 1.11 osv. er presiseringar eller konsekvensar. Eit nytt hovudtal skal berre kome når eit nytt hovudledd er nødvendig. Nummereringa skal uttrykkje slektskap, ikkje berre rekkjefølgje.
+          For kvart teorem skal du internt kunne peike på dei konkrete tidlegare proposisjonane som gjer det gyldig. Dersom det berre er plausibelt, er det ikkje eit teorem. For kvart postulat skal det vere klart kvifor det ikkje blir smugla inn som konklusjon. For kvar definisjon skal seinare bruk vere konsekvent.
 
           Språkkrav: kort, hardt, enkelt, nøkternt, presist. Ingen akademisk fyll. Ingen falsk mystikk. Ingen retoriske spørsmål. Ingen overgangsprosa som berre bind saman. Ingen setning skal stå berre fordi ho høyrest klok ut. Føretrekk vanlege ord. La nokre avgjerande proposisjonar vere svært korte; la andre få to eller tre setningar når utleiinga krev det.
 
           Teorien skal fungere som eit operativt fundament for design og formdanning: beskrive form; skilje moglege frå realiserte konfigurasjonar; generere hypotesar; samanlikne alternativ; forklare val; undersøkje relasjonar mellom avgrensing, val og konsekvens; teste påstandar; peike ut uvissa; og knyte form til materiale, produksjon, bruk, persepsjon og situasjon utan å redusere form til nokon av dei.
 
-          Ver særleg streng med omgrepa form, objekt, ting, konfigurasjon, mogleg, realisert, regel, avgrensing, val, relasjon, transformasjon, rom, materiale, funksjon, intensjon og forklaring. Ingen av dei får vere diffuse.
+          Ver særleg streng med omgrepa form, objekt, ting, konfigurasjon, mogleg, realisert, regel, avgrensing, val, relasjon, transformasjon, rom, materiale, funksjon, intensjon og forklaring. Ingen av dei får vere diffuse. Eit omgrep skal helst først oppstå i ein definisjon eller i ein proposisjon der meininga er tvingande klar frå det som allereie er etablert.
 
           Test stille kvar proposisjon: Kva ville gjort henne falsk? Er ho analytisk, empirisk eller postulert? Følgjer ho frå det som står før? Treng systemet henne? Brukar ho omgrep som enno ikkje er etablerte? Kan ho seiast enklare? Er ho berre repetisjon? Opnar ho for faktisk undersøking eller formarbeid? Omskriv, flytt eller fjern alt som ikkje held.
 
-          Bruk ekstra mykje arbeid på dei første 10–20 proposisjonane. Opninga må etablere nesten alt resten kan vekse frå. Ikkje aksepter eksisterande opning automatisk. Finn den sterkaste moglege første proposisjonen.
+          Bruk ekstra mykje arbeid på dei første 10–20 proposisjonane. Opninga må etablere nesten alt resten kan vekse frå. Ikkje aksepter eksisterande opning automatisk. Finn den sterkaste moglege første proposisjonen. Dei første proposisjonane skal vere så fundamentale at seinare delar kan peike tilbake på dei utan å måtte innføre eit nytt metafysisk system undervegs.
 
           Slutten må vise grensene for systemet: kva teorien kan avgjere, kva ho berre kan strukturere, kva som må prøvast i materiale eller handling, og kva ho ikkje kan avgjere åleine. Slutten skal kaste nytt lys bakover på starten.
 
-          Etter første omskriving, gå gjennom heile teksten ein gong til og fjern redundans, banalitetar, falske teorem, unødvendige omgrep, overgangsprosa og metaforar som svekkjer presisjonen. Kontroller inferenskjedene frå første til siste proposisjon.
+          SISTE KONTROLLPASS, OBLIGATORISK:
+          Les berre proposisjonane i nummerrekkjefølgje. Etter kvar proposisjon, lat som resten av manuskriptet er skjult. Spør om den NESTE proposisjonen kan forståast og forsvarast berre frå det som no er synleg. Om ikkje: reparer kjeda. Gjer dette frå første til siste proposisjon. Deretter sjekk parent-child-forholdet for ALLE nummer. Ingen laus proposisjon får overleve.
 
-          OUTPUTKRAV: Gi berre det fullstendige, ferdige traktatmanuskriptet. Ingen føreord. Ingen kommentar til endringane. Ingen analyse. Ingen samandrag. Ingen samanlikning med Wittgenstein. Behald LaTeX-makroformatet for proposisjonar dersom det let seg gjere: \mainprop{...}{...}{...} og \prop{...}{...}{...}. Lever heile teksten, ikkje eit utdrag.
+          OUTPUTKRAV: Gi berre det fullstendige, ferdige traktatmanuskriptet. Ingen føreord. Ingen kommentar til endringane. Ingen analyse. Ingen samandrag. Ingen samanlikning med Wittgenstein. Behald LaTeX-makroformatet: \mainprop{...}{...}{...} og \prop{...}{...}{...}. Lever heile teksten, ikkje eit utdrag. Hugs to ASCII-mellomrom per hierarkinivå framfor kvar \prop-linje.
 
           KJELDEMANUSKRIPT:
           PROMPT
