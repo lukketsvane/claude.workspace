@@ -1,0 +1,172 @@
+● Check exact indentation levels in source snippet (shell)
+  │ cat << 'EOF' > /tmp/src.txt
+  │ \prop{6.5}{d}{Føremålet til ein handling er den delen av agenten si forventing som er retta
+  │ mot å få realisert ein bestemt konfigurasjon.}
+  │ \prop{6.51}{d}{Verknaden til ein handling er det som faktisk skjer med moglegheitsfeltet og
+  │ med andre agentar si forventing, uavhengig av føremålet.}…
+  └ 10 lines…
+
+Eg har analysert kjeldeteksten grundig og funne fleire brot: den øydelagde 1.4, ei postulat forkledd som teorem i 1.51, to ugyldige "teorem" (2.31, 2.41) som ikkje følgjer av premissane, ein sirkelslutning i grensa mellom open/forboden sone, overtolka konvergens-argument (1.611, 3.31), utidig samanblanding av forklaring og prediksjon i kapittel 7, og eit unødvendig omgrepspar (liv/død) som ikkje ber vekt andre stader i systemet. Eg har òg bytt rekkefølgje på gamle kapittel 7 og 8, sidan "forklaring" vart brukt før han vart definert. Her er heile traktaten skriven på nytt:
+
+● noop (shell)
+  │ echo ready
+  └ 2 lines…
+
+```latex
+\silentchapter{Proposisjonar}{proposisjonar}
+
+\begin{widebody}
+\begin{center}\footnotesize
+\begin{tabular}{@{}lllll@{}}
+\textbf{\textit{d}} definisjon & \textbf{\textit{a}} postulat & \textbf{\textit{t}} teorem & \textbf{\textit{o}} observasjon & \textbf{\textit{i}} illustrasjon \\
+\end{tabular}
+\end{center}
+\end{widebody}
+
+\vspace{6mm}
+
+\mainprop{1}{}{Formverda er alt som er tilfelle.}
+  \prop{1.1}{d}{Eit \textbf{objekt} er den enklaste delen ei samanheng kan brytast ned til. Objektet er det same før og etter at det inngår i noka samanheng.}
+  \prop{1.2}{d}{Ein \textbf{konfigurasjon} er ei bestemt samanheng av objekt.}
+  \prop{1.3}{d}{\textbf{Forma} til ein konfigurasjon er måten objekta i han heng saman på. Forma er ikkje konfigurasjonen sjølv, men det ved han som kan kjennast att i ein annan konfigurasjon.}
+    \prop{1.31}{t}{To konfigurasjonar med same objekt, men ulik samanheng mellom dei, har ulik form.}
+    \prop{1.32}{t}{To konfigurasjonar med ulike objekt, men same samanheng mellom dei, har same form.}
+  \prop{1.4}{d}{Ein konfigurasjon er \textbf{mogleg} dersom objekta sin natur tillèt samanhengen. Ein konfigurasjon er \textbf{realisert} dersom samanhengen faktisk er inngått. Kvar realisert konfigurasjon er mogleg; det motsette gjeld ikkje: at ein konfigurasjon er mogleg, seier ingenting om han er eller vert realisert.}
+    \prop{1.41}{t}{Kvar realisert konfigurasjon er eksakt. Det finst ingen delvis realisert konfigurasjon, sidan ei "delvis" samanheng anten er inngått, og då ei anna, like bestemt konfigurasjon (1.2), eller ikkje inngått, og då ikkje realisert.}
+  \prop{1.5}{d}{\textbf{Moglegheitsfeltet} til nokre objekt er totaliteten av konfigurasjonar dei kan inngå i.}
+    \prop{1.51}{a}{Moglegheitsfeltet vert ikkje konstruert av nokon som spør etter det. Det er fastlagt av objekta sin natur før noka spørjing tek til, og vert oppdaga, ikkje skapt, når nokon prøver ei samanheng dei ikkje har prøvd før.}
+    \prop{1.52}{t}{At ein konfigurasjon vart realisert nett slik ho vart, medan resten av moglegheitsfeltet (1.5) også var ope, krev ei forklaring utover konfigurasjonen sjølv. "Mogleg" (1.4) seier berre at objekta tillèt samanhengen, ikkje at nett denne skal inntreffe. Konfigurasjonen sitt eige innhald gjev difor ingen grunn til at nett han, og ikkje ein annan, vart realisert.}
+  \prop{1.6}{d}{Moglegheitsfeltet deler seg i tre soner: den \textbf{busette}, den \textbf{opne} og den \textbf{forbodne}.}
+    \prop{1.61}{o}{Den busette sona er dei konfigurasjonane som alt er realiserte. Ho fungerer i praksis som eit arkiv andre kan orientere seg etter.}
+      \prop{1.611}{d}{\textbf{Tyngda} til ein posisjon i den busette sona er talet på uavhengige realiseringar av same posisjon: realiseringar som ikkje kjem av at éin kopierer ein annan.}
+      \prop{1.612}{o}{Tyngd kan vekse ved at fleire uavhengige forsøk endar same stad. Dette er foreinleg med at posisjonen svarar særskilt godt på noko ved objekta sjølve; det er òg foreinleg med reint samantreff. Konfigurasjonen og talet på uavhengige treff åleine avgjer ikkje kva for eitt av desse to som er tilfellet. Traktaten trekkjer ikkje den konklusjonen for henne.}
+    \prop{1.62}{d}{Den opne sona er konfigurasjonar som objekta tillèt, men som ikkje er realiserte enno. Ho er avgrensa mellom den busette og den forbodne.}
+    \prop{1.63}{d}{Den forbodne sona er konfigurasjonar objekta sin natur ikkje tillèt. Forbodet følgjer av kva objekta er, ikkje av sona som stad.}
+      \prop{1.631}{o}{Vår oppfatning av kvar grensa mellom open og forboden sone går, kan vise seg feil: eit forsøk kan lukkast der vi trudde forbod var, eller mislukkast der vi trudde det var ope. Eit slikt forsøk korrigerer vår oppfatning av grensa. Det flyttar ikkje grensa sjølv, sidan grensa etter 1.63 er fastlagt av objekta, ikkje av kva vi trur om dei.}
+      \prop{1.632}{t}{Moglegheitsfeltet er etter 1.5 definert relativt til bestemte objekt. Vert objekta som utgjer feltet bytte ut, tilførte, eller endra i samansetning, gjeld difor definisjonen no eit anna sett objekt, og feltet han peiker på er eit anna felt, med si eiga grense. Dette er ikkje det same feltet med flytta grense; det er eit nytt felt.}
+  \prop{1.7}{d}{På tvers av dei tre sonene ligg ei anna deling: det \textbf{kjende}, det \textbf{tenkjelege} og det \textbf{utenkjelege}. Det kjende er konfigurasjonar nokon har prøvd og veit verkar eller sviktar. Det tenkjelege er konfigurasjonar nokon kan førestille seg, men ikkje veit utfallet av. Det utenkjelege er konfigurasjonar ingen enno kan førestille seg.}
+    \prop{1.71}{t}{Det kjende femner både det som har vist seg å halde, og det som har vist seg å svikte. Ein mislukka konfigurasjon er like kjend som ein vellukka, etter 1.7.}
+    \prop{1.72}{t}{Grensa mellom det tenkjelege og det utenkjelege er usynleg innanfrå: å sjå henne ville krevje å førestille seg det ein per definisjon ikkje kan førestille seg (1.7). Ingen kan difor vite kor stor denne grensa er, sett frå si eiga side av henne.}
+    \prop{1.73}{o}{Dei tre sonene i 1.6 og dei tre områda i 1.7 er ikkje same deling. Ein forboden konfigurasjon kan vere fullt ut tenkjeleg. Ein open konfigurasjon kan vere utenkjeleg for alle som no navigerer feltet.}
+
+\flowchapter{2 Ikkje alle konfigurasjonar er like sannsynlege}{ikkje alle konfigurasjonar er like sannsynlege}
+\mainprop{2}{}{Innanfor det opne er ikkje alle konfigurasjonar like sannsynlege å bli realiserte.}
+  \prop{2.1}{d}{Å seie at éin konfigurasjon er \textbf{meir sannsynleg} enn ein annan, innanfor det same opne feltet, tyder at han oftare vert realisert enn den andre når same felt vert prøvd att og att, alt anna likt.}
+  \prop{2.2}{d}{Eit \textbf{trykk} er noko som gjer nokre konfigurasjonar meir sannsynlege og andre mindre sannsynlege (2.1). Eit trykk avgjer ikkje åleine kva for éin konfigurasjon som vert realisert.}
+    \prop{2.21}{t}{Noko som ikkje gjer nokon konfigurasjon meir eller mindre sannsynleg enn ein annan, er etter 2.2 ikkje eit trykk. Noko som gjer éin konfigurasjon fullstendig sikker og alle andre umoglege, avgjer åleine kva som vert realisert, og er difor heller ikkje eit trykk etter 2.2, men ei tvinging. Verkelege trykk ligg mellom desse to.}
+  \prop{2.3}{a}{Fleire trykk verkar samstundes på det same opne feltet.}
+  \prop{2.4}{d}{To trykk er \textbf{motstridande} dersom kvart av dei, åleine, ville gjort ein annan konfigurasjon til den mest sannsynlege av alle, og dersom det som gjer den eine sin favoritt meir sannsynleg, gjer den andre sin favoritt mindre sannsynleg.}
+    \prop{2.41}{t}{Ein realisert konfigurasjon er éin bestemt konfigurasjon (1.2, 1.41). Der to motstridande trykk (2.4) verkar samstundes, har dei to ulike favorittar. Den eine realiserte konfigurasjonen kan difor vere identisk med høgst éin av desse favorittane, og svarar dermed ikkje fullt ut -- er ikkje favoritten til -- minst eitt av dei to trykka.}
+  \prop{2.5}{t}{At éin konfigurasjon er "betre" eller "verre" enn ein annan, seier ingenting utan å oppgje kva trykk ein måler etter (2.2). Same par konfigurasjonar kan rangerast motsett under to ulike val av trykk.}
+  \prop{2.6}{t}{Sidan eit verkeleg trykk verken utelukkar alt eller ingenting (2.21), og sidan meir enn eitt trykk kan verke samstundes og motstride kvarandre (2.3, 2.4), avgjer trykka aldri åleine kva for éin konfigurasjon som vert realisert. Dei nettoppar kor sannsynlege dei attverande konfigurasjonane er, seg imellom.}
+
+\flowchapter{3 Trykka gjev ei rangering}{trykka gjev ei rangering}
+\mainprop{3}{}{Dei samstundes verkande trykka gjev ei rangering av kor gunstig kvar posisjon i det opne feltet er.}
+  \prop{3.1}{d}{\textbf{Rangeringa} er verknaden av alle trykka (kap. 2) lagt saman: han ordnar posisjonane i det opne feltet etter kor godt kvar av dei samla svarar på trykka. Vi kallar denne rangeringa \textbf{landskapet}, men namnet legg ikkje noko til definisjonen.}
+    \prop{3.11}{o}{Rangeringa let seg berre lodde i ettertid, ved å sjå kva som vart verande. Ho gjev retning, ikkje ein garantert einskild utgang.}
+  \prop{3.2}{d}{Ein \textbf{haug} er ein posisjon der kvart steg vekk frå han rangerer lågare enn posisjonen sjølv. Ein \textbf{dal} er ein posisjon konfigurasjonar systematisk vert vekke frå: nabostega rangerer høgare.}
+    \prop{3.21}{o}{Ei rangering med mange haugar er det vanlege. At det skulle finnast éin einaste haug som rangerer høgast for alle trykk samstundes, er eit særtilfelle -- forventa å vere sjeldnare når trykka er motstridande (2.4) -- ikkje regelen.}
+    \prop{3.22}{d}{Stabiliteten til ein haug svarar til kor mykje rangeringa søkk for kvart steg vekk frå han. Bratt fall \textbf{kanaliserer}: det held konfigurasjonar nær haugen. Grunt fall tillèt at konfigurasjonar spreier seg lenger unna utan stort tap i rangering.}
+  \prop{3.3}{d}{Ein \textbf{stilart} er ei samling busette konfigurasjonar (1.61) som ligg kring same haug. Grensa til ein stilart er uskarp, sidan konfigurasjonane spreier seg gradvis nedover haugsidene og kan gli over i naboklyngjer.}
+    \prop{3.31}{o}{Dersom to tradisjonar utan kontakt med kvarandre uavhengig endar busette rundt same haug, er dette foreinleg med at haugen er ein eigenskap ved rangeringa sjølv, ikkje eit sams val dei to tradisjonane tilfeldigvis har gjort. Det avgjer det ikkje åleine, av same grunn som i 1.612.}
+
+\flowchapter{4 Rangeringa står ikkje stille}{rangeringa star ikkje stille}
+\mainprop{4}{}{Rangeringa (kap. 3) endrar seg over tid.}
+  \prop{4.1}{a}{Trykka kviler aldri.}
+    \prop{4.11}{o}{Ei korrigert oppfatning av grensa (1.631) endrar kva som vert rekna som ope; eit nytt objektsett (1.632) gjev eit nytt felt med ny rangering; eit trykk som kjem til, endrar kva som vert rangert høgt.}
+    \prop{4.12}{o}{Lange periodar der rangeringa held seg stabil kring same haugar, brotnar av og til brått: konfigurasjonar spreier seg inn i tidlegare open sone og finn deretter nye, stabile haugar. Bruddet er ikkje eit unntak frå trykka si stendige verksemd (4.1); det er akkumulerte, gradvise forskyvingar som når eit punkt der ein haug søkk saman.}
+  \prop{4.2}{t}{Kvar konfigurasjon som vert realisert, flyttar seg frå open til busett sone (1.62, 1.61) og aukar difor tyngda på den posisjonen (1.611). Rangeringa som møter neste realisering, er dermed endra av den førre. Vi kallar dette \textbf{stiavhengigheit}: kvar realisering arvar posisjonen dei føregåande realiseringane skapte.}
+  \prop{4.3}{o}{Når eitt trykk kjem til å dominere heilt over alle andre, søkk rangeringa saman mot éin haug. Dette forklarar ikkje mangfaldet av former; det er fråveret av differensiert trykk. Mangfald av form heng saman med mangfald av verksame trykk (2.3).}
+    \prop{4.31}{t}{Ei forståing som handsamar alle trykk som om dei var eitt einaste, representerer ikkje dei andre trykka som faktisk verkar. Ho er difor ikkje ei innsikt i feltet; ho er ei innsnevring av kva som vert sett.}
+    \prop{4.32}{o}{Konfigurasjonar realiserte under ei slik innsnevra forståing sviktar ofte langs nett dei trykka forståinga ikkje såg.}
+
+\flowchapter{5 Det finst agentar}{det finst agentar}
+\mainprop{5}{}{I formverda finst det agentar: system som ikkje berre vert utsette for rangeringa, men som navigerer i henne.}
+  \prop{5.1}{a}{Minst eitt slikt system finst for kvart felt konfigurasjonar er henta frå.}
+  \prop{5.2}{d}{Ein \textbf{agent} er eit vedvarande system som held ei \textbf{forventing} om ein avgrensa del av eit moglegheitsfelt, og som \textbf{handlar} for å halde det som faktisk skjer nær denne forventinga, innanfor ei fast \textbf{toleranse}. Når avviket mellom forventing og faktum overstig toleransen, justerer agenten anten forventinga eller handlinga.}
+    \prop{5.21}{t}{Definisjonen nemner ikkje kva agenten er laga av. Kvart system som held ei forventing, handlar for å halde henne, og har ei toleranse for avvik, er ein agent etter 5.2, same kva substans han er bygd av.}
+      \prop{5.211}{i}{Ein varmeregulator navigerer éin akse med éin brytar. Eit tre navigerer mange gradientar samstundes utan sentral styring. Ein koloni av mange små agentar lèt eit felles byggverk trå fram i feltet mellom dei. Ein designar representerer, i tillegg til eiga forventing, delar av andre agentar sine forventingar.}
+    \prop{5.22}{t}{Det som i 1.7 vart kalla "nokon" som prøver eller førestiller seg ein konfigurasjon, er alltid eit system av den sorten 5.2 kallar ein agent: eit system som held forventing, handlar, og har toleranse for avvik. Utan eit slikt system gjev det ikkje meining å seie at ei samanheng er prøvd eller førestilt.}
+  \prop{5.3}{d}{\textbf{Rekkevidda} til ein agent er den delen av moglegheitsfeltet forventinga hans femner, innanfor toleransen. Ei konfigurasjon utanfor rekkevidda har ingen verknad for agenten: han kan korkje vente henne eller merke avviket ho gjev.}
+  \prop{5.4}{d}{\textbf{Føresynshorisonten} til ein agent er kor langt fram i tid forventinga hans held seg innanfor toleransen. Bortanfor horisonten veks avviket mellom forventing og faktum forbi det agenten toler.}
+  \prop{5.5}{d}{\textbf{Omhugen} til ein agent er kor presist forventinga hans held seg, del for del, innanfor rekkevidda. Rekkevidda seier kva agenten femner; omhugen seier kor nøyaktig han følgjer kvar del av det han femner.}
+  \prop{5.6}{d}{\textbf{Kompetansen} til ein agent er evna hans til å nå ein stabil posisjon (haug, 3.2) i få steg frå ei tilfeldig utgangsstilling.}
+    \prop{5.61}{o}{Erfaringsmessig følgjer høg kompetanse omhugen tettare enn rekkevidda åleine: vid, men grunn dekning når sjeldnare fram til ein stabil posisjon enn smal, men presis dekning.}
+  \prop{5.7}{d}{Ein \textbf{formingsregel} er ei operasjon som kjenner att ein delkonfigurasjon inni ein heil konfigurasjon, og byter denne delen ut med ein annan.}
+    \prop{5.71}{t}{Gjentatt bruk av formingsreglar frå ein gitt konfigurasjon genererer eit sett nye konfigurasjonar: dei formingsreglane kan nå frå det utgangspunktet.}
+    \prop{5.72}{t}{Å bruke ein formingsregel utan å realisere resultatet, held konfigurasjonen innanfor det tenkjelege (1.7): agenten utforskar. Å realisere resultatet flyttar konfigurasjonen frå tenkjeleg til kjend (1.7): agenten forpliktar seg.}
+    \prop{5.73}{t}{Sidan formingsreglar kan brukast på busette konfigurasjonar og nå fram til konfigurasjonar som før berre var tenkjelege (5.72), er formingsreglane det som flyttar grensa mellom det tenkjelege og det kjende.}
+    \prop{5.74}{t}{Ein agent som brukar formingsreglar, oppfinn difor ikkje nye grunnmoglegheiter: moglegheitsfeltet er alt fastlagt av objekta (1.5, 1.51). Han avdekkjer konfigurasjonar som alt låg i feltet.}
+  \prop{5.8}{d}{\textbf{Affordansen} til ein konfigurasjon, for ein gitt agent, er dei operasjonane (5.7) konfigurasjonen tillèt akkurat den agenten å utføre, gjeve agenten si rekkevidd (5.3).}
+    \prop{5.81}{t}{Meining for ein agent er difor ikkje ein eigenskap ved konfigurasjonen åleine, sidan affordansen i 5.8 er definert relativt til agenten si rekkevidd. Same konfigurasjon kan tilby ulike operasjonar til to agentar med ulik rekkevidd.}
+  \prop{5.9}{d}{Ein \textbf{klasse} av objekt er ei gruppering etter delt affordansestruktur: objekta i klassen tilbyr same operasjonar til dei same agentane.}
+    \prop{5.91}{o}{Affordansestrukturen er om lag konstant innanfor klassen. Han seier lite om kvifor nett éin konfigurasjon i klassen oppstod, framfor ein annan i same klasse.}
+
+\flowchapter{6 Forma oppstår mellom agentar}{forma oppstar mellom agentar}
+\mainprop{6}{}{Forma oppstår i feltet mellom fleire agentar, ikkje i éin agent åleine.}
+  \prop{6.1}{d}{Ein \textbf{designar} er ein agent A der forventinga hans, langs minst éin del av rekkevidda, femner verknaden ein konfigurasjon har på ein annan agent B si forventing.}
+    \prop{6.11}{t}{Ingen agent er designar reint og skjært, sidan 6.1 berre krev "minst éin del" av rekkevidda. Ein agent er designar langs nokre delar av rekkevidda si, og ikkje langs andre.}
+    \prop{6.12}{t}{Å vere designar er difor eit gradert forhold: eit spørsmål om kor mange delar av rekkevidda som fyller kriteriet i 6.1, og kor mange andre agentar som vert femna.}
+  \prop{6.2}{t}{Fleire agentar responderer på ulike trykk samstundes (2.3), kvar innanfor si eiga rekkevidd (5.3). Ein realisert form er difor eit møte mellom fleire forventingar, ikkje berre mellom trykk (kap. 2--4). Ingen einskild agent dikterer forma åleine.}
+    \prop{6.21}{t}{Ein agent med snever rekkevidd kan fremje eit utfall han manglar rekkevidd til å representere sjølv (5.3, 5.8); utfallet oppstår då som verknad av mange slike agentar saman, ikkje som noko nokon av dei planla.}
+    \prop{6.22}{o}{Å forklare ei form frå dei minste agentane si åtferd, og å forklare same forma frå trykket på heilskapen, er ofte begge nyttige, på ulike nivå av rekkevidd. Ingen av dei to er nødvendigvis tilstrekkeleg åleine.}
+  \prop{6.3}{d}{Eit samansett system av fleire agentar utgjer sjølv ein \textbf{agent} (5.2) dersom det som heilskap held ei eiga forventing og handlar for å halde henne innanfor ei eiga toleranse, sjølv om ingen av delane åleine gjer det.}
+  \prop{6.4}{t}{Forbodne sona (1.63) og affordansen (5.8) til ein konfigurasjon er definerte utan referanse til noko føremål. Kva operasjonar som i det heile er tilgjengelege, er difor avgrensa av objekta og konfigurasjonen sjølve, uavhengig av om nokon agent har valt eit føremål for dei.}
+    \prop{6.41}{i}{Eit metallrøyr kan tåle bøying lenge før nokon representerer den bøyinga som ein sitjeflate. Affordansen ligg i materialet uavhengig av om nokon agent enno har rekkevidd nok til å nytte han.}
+    \prop{6.42}{t}{Realiseringa av ein konfigurasjon er difor alltid avgrensa av affordansen (6.4), i tillegg til rangeringa (kap. 2--4) og rekkevidda til dei involverte agentane (5.3). Ingen av dei tre åleine avgjer utfallet.}
+  \prop{6.5}{d}{\textbf{Føremålet} til ein handling er den delen av agenten si forventing som er retta mot å få realisert ein bestemt konfigurasjon.}
+  \prop{6.6}{d}{\textbf{Verknaden} til ein handling er det som faktisk skjer med moglegheitsfeltet og med andre agentar si forventing, uavhengig av føremålet.}
+    \prop{6.61}{t}{Føremål (6.5) og verknad (6.6) kan falle saman eller skilje lag, sidan dei er to ulike storleikar etter definisjonane.}
+    \prop{6.62}{o}{At dei skil lag, er ofte tilfellet, sidan affordansen (6.4) og andre agentars trykk (2.3) verkar uavhengig av kva éin agent hadde som føremål.}
+    \prop{6.63}{t}{Strukturen (1.3) til ein realisert konfigurasjon er det som står att uavhengig av kva føremål som styrte forma. Den materielle realiseringa av strukturen er avgrensa av affordansen (6.4), ikkje av føremålet.}
+  \prop{6.7}{t}{For ein agent som møter ei form utan sjølv å ha delteke i realiseringa, fungerer stilarten (3.3) -- etter 1.3, det ved forma som kan kjennast att, og etter 5.81, relatert til akkurat denne agenten si rekkevidd -- som eit gjenkjenneleg orienteringspunkt, ikkje som eit spor etter trykk han ikkje har tilgang til. Han merkar punktet, ikkje trykka som forma det.}
+    \prop{6.71}{t}{Ein designar (6.1) som ser bort frå dette, ser bort frå den agenten forma er meint for.}
+    \prop{6.72}{o}{Å navigere med kjennskap til ein stilart er å halde fleire trykk samstundes komprimert til éin gjenkjenneleg posisjon.}
+  \prop{6.8}{d}{Det \textbf{nærliggande moglege} er den delen av det tenkjelege (1.7) som ligg i open sone (1.62), og som formingsreglane (5.7) kan nå frå den busette sona i få bruk.}
+  \prop{6.9}{t}{Kvar realisert konfigurasjon flyttar ein del av det tenkjelege inn i det kjende (5.72--5.73). Realisert form er difor aldri endeleg: rangeringa flyttar seg (kap. 4), og ei stabil løysing i dag vert gradvis mindre stabil. Berre det som genererer form -- moglegheitsfeltet, trykka, rangeringa, agentane, formingsreglane -- varer ved.}
+  \prop{6.10}{t}{Ei realisert form er den av dei nåbare konfigurasjonane (5.71, 5.73) som rangeringa (kap. 2--4) gjer mest gunstig, og som ligg innanfor rekkevidda til dei involverte agentane (5.3). Ingen av desse tre -- reglane, rangeringa, rekkevidda -- forklarar forma åleine.}
+    \prop{6.101}{t}{Der rangeringa ikkje skil nokon nåbar konfigurasjon frå ein annan, reduserer forklaringa seg til rein utfalding av formingsreglar. Der ingen formingsregel kan endre noko, reduserer ho seg til rein konkurranse mellom eit fast sett konfigurasjonar i rangeringa. Dei to tilfella er grensetilfelle av same forklaring (6.10), ikkje to konkurrerande forklaringar.}
+    \prop{6.102}{o}{Sidan verkelege formingssituasjonar snautt nokon gong er reine grensetilfelle (2.3, 4.1), er kvar forklaring som berre nyttar formingsreglar, eller berre nyttar rangeringa, ofte ufullstendig.}
+
+\flowchapter{7 Forklaring, vurdering og mynde}{forklaring vurdering og mynde}
+\mainprop{7}{}{Å forklare ei form, å vurdere henne, og å avgjere kven som får gjere ei vurdering bindande for andre, er tre ulike handlingar.}
+  \prop{7.1}{d}{Ei \textbf{forklaring} av ei form viser kva rangering (kap. 2--4), kva rekkevidd (5.3) og kva formingsreglar (5.7) som gjorde nett denne konfigurasjonen mest gunstig (6.10). Ho er fullstendig når det kan visast at ho følgjer av proposisjonane i kapittel 1--6 for den aktuelle konfigurasjonen; ho er ufullstendig når det ikkje kan visast.}
+  \prop{7.2}{d}{Ei \textbf{vurdering} av ei form seier at éin konfigurasjon bør føretrekkast framfor ein annan, ut frå eit sett trykk den som vurderer legg vekt på.}
+    \prop{7.21}{t}{Vurderinga hentar ikkje vekta si frå forklaringa (7.1). To agentar kan gje same forklaring på ei form og likevel vurdere henne motsett, fordi dei vektar trykka ulikt (2.5).}
+    \prop{7.22}{t}{Ingen vurdering følgjer av konfigurasjonen åleine (2.5). Ho krev eit valt sett trykk, utanfrå, frå den som vurderer.}
+    \prop{7.23}{t}{Der to trykk er motstridande (2.4), kan ein rangere konfigurasjonar berre etter at nokon har valt kor tungt kvart trykk skal telje. Utan slikt val er nokre par konfigurasjonar ikkje samanliknbare langs éi skala.}
+  \prop{7.3}{d}{\textbf{Mynde} er retten ein agent har til å gjere si eiga vurdering bindande for kva konfigurasjonar andre agentar kan eller må realisere.}
+    \prop{7.31}{t}{Mynde følgjer korkje av rett forklaring (7.1) eller av rimeleg vurdering (7.2). Ein agent kan forklare rett og vurdere rimeleg, og likevel mangle mynde. Ein annan kan ha mynde utan å forklare eller vurdere rett i det heile.}
+    \prop{7.32}{o}{I praksis vert mynde tildelt gjennom avtale, posisjon eller makt mellom agentar. Desse forholda er ikkje avleia frå moglegheitsfeltet, trykka eller rekkevidda; dei verkar på formverda utanfrå, som sitt eige sett med trykk mellom agentar.}
+  \prop{7.4}{d}{\textbf{Ansvar} er plikta ein agent har til å svare for verknadene (6.6) handlingane hans har på andre agentars forventing og rekkevidde.}
+    \prop{7.41}{t}{Ansvar føreset asymmetri (6.11--6.12): agenten som handla, hadde rekkevidd nok til å påverke; den påverka hadde ofte ikkje rekkevidd nok til å hindre det.}
+    \prop{7.42}{t}{Asymmetrien i 7.41 gjer ansvar mogleg. Ho gjer det ikkje obligatorisk. Om asymmetrien skal utløyse ansvar, er eit spørsmål for vurdering (7.2) og mynde (7.3), ikkje eit forklaringa (7.1) åleine kan avgjere.}
+  \prop{7.5}{d}{\textbf{Skade} er ein reduksjon i rekkevidda eller kompetansen (5.3, 5.6) til ein annan agent, som eit spesialtilfelle av verknad (6.6).}
+    \prop{7.51}{t}{At skade har skjedd, er eit forklaringsspørsmål (7.1). Om skaden var urettmessig, er eit vurderingsspørsmål (7.2). Kven som får krevje oppreisning for han, er eit mynde-spørsmål (7.3). Dei tre spørsmåla har ikkje same svar berre fordi dei gjeld same hending.}
+  \prop{7.6}{t}{Kompetanse (5.6) kan verke utan at agenten kan gjere greie for forventinga si i ord, sidan verken 5.5 eller 5.6 krev at forventinga vert uttalt. Omhugen kan vere presis sjølv om han ikkje er uttalt.}
+    \prop{7.61}{t}{Slik uuttalt kompetanse er likevel ikkje immun mot vurdering. Det som ei realisert form ber av spor etter kompromisset (6.10) let seg lese uavhengig av om agenten kan setje ord på forventinga si; vurderinga rettar seg mot verknaden (6.6), ikkje mot orda.}
+
+\flowchapter{8 Forma ber spor av omhugen}{forma ber spor av omhugen}
+\mainprop{8}{}{Forma ber spor av kor langt omhugen til dei som forma henne, rakk -- men dette sporet er noko anna enn evna til å seie føreåt kvar det vil syne seg.}
+  \prop{8.1}{o}{Ei realisert form er eit lesbart resultat av møtet mellom fleire agentar og trykk (6.2, 6.10). Ei form laga under tynn omhug (5.5) sviktar ofte langs dei delane av rekkevidda (5.3) som ikkje vart følgde nøye.}
+    \prop{8.11}{o}{Sporet er lesbart fordi forma ikkje er tilfeldig, men resten etter ein retta prosess (6.10). Retninga er gjeven av rekkevidde og omhug (5.3, 5.5).}
+    \prop{8.12}{o}{To former laga for same føremål (6.5), under ulik omhug, skil seg ofte nett langs dei delane éin agent følgde nøye og ein annan ikkje følgde.}
+    \prop{8.13}{o}{Dette sporet er ikkje i seg sjølv ei skulding. Det er eit faktum om kva som vart følgt og kva som ikkje vart følgt (7.1), ikkje ei vurdering (7.2) av om det burde vore følgt.}
+  \prop{8.2}{d}{\textbf{Svikttida} langs ein del av rekkevidda er tida frå realisering til konsekvensen av manglande omhug der viser seg. Held vi svikttida opp mot føresynshorisonten (5.4), får vi tre høve: konsekvensen kjem godt innanfor horisonten (\textbf{innfelt svikt}); konsekvensen kjem nær grensa av horisonten (\textbf{lesleg svikt}); konsekvensen kjem langt etter horisonten (\textbf{usynleg svikt}).}
+    \prop{8.21}{i}{Ryggverk etter ein arbeidsdag er innfelt eller lesleg svikt: konsekvensen kjem innanfor eller nær horisonten til den som kjenner ho. Nedbryting av eit eingongsprodukt over hundreår er usynleg svikt: konsekvensen kjem langt etter at nokon involvert agent kunne følgt henne.}
+  \prop{8.3}{t}{Ei forklaring (7.1) namngjev rekkevidda og omhugen til agentane som forma ei form. Dette gjer henne i stand til å peike ut kva del av rekkevidda som ikkje er dekt av omhug. Men å peike ut ein slik utekt del er ikkje det same som å seie føreåt AT og NÅR ein konsekvens vil vise seg der: tidspunktet, altså svikttida (8.2), avheng òg av korleis rangeringa endrar seg vidare (kap. 4), noko forklaringa for den realiserte konfigurasjonen ikkje treng ha fanga.}
+    \prop{8.31}{t}{Ei forklaring kan difor vere fullstendig for ein realisert konfigurasjon (7.1) utan å kunne seie føreåt eit einskild framtidig svikt. Forklaring viser mekanismen -- rangering, rekkevidd, reglar (6.10) -- attende i tid. Å seie føreåt eit einskild utfall krev i tillegg at rangeringa ikkje endrar seg vidare på ein måte forklaringa ikkje fanga.}
+    \prop{8.32}{o}{Evna til å peike ut ein utekt del av rekkevidda er difor ei nyttig tilleggsprøve på ei forklaring, ikkje eit krav 7.1 må oppfylle for å telje som forklaring.}
+  \prop{8.4}{o}{Formverda er framleis det som er tilfelle (jf. 1). Navigasjonen held fram, og kvar realisering legg eit nytt spor i arkivet (4.2, 8.1).}
+
+\flowchapter{9 Grensene for traktaten}{grensene for traktaten}
+\mainprop{9}{}{Traktaten avgjer nokre spørsmål, strukturerer andre, og overlèt resten til det som skjer utanfor henne.}
+  \prop{9.1}{t}{Traktaten kan avgjere om ei forklaring følgjer av rangering, rekkevidd og formingsreglar (7.1). Det er eit spørsmål om gyldig utleiing, og ho avgjer det åleine.}
+  \prop{9.2}{t}{Traktaten kan strukturere ei vurdering: ho kan vise kva trykk som står mot kvarandre (2.4), og at "betre" er tomt utan eit valt sett trykk (2.5, 7.22). Ho kan ikkje velje settet for nokon.}
+  \prop{9.3}{t}{Traktaten kan ikkje avgjere mynde (7.3). Mynde er eit forhold mellom agentar ho ikkje modellerer; det må prøvast gjennom forhandling, avtale eller makt (7.32), ikkje gjennom forklaring.}
+  \prop{9.4}{t}{Traktaten kan peike ut kva del av ein agents rekkevidd som ikkje er dekt av omhug (8.3). Ho kan ikkje alltid seie føreåt når konsekvensen syner seg (8.31), og ho kan ikkje avgjere om ein konsekvens er til å leve med -- det spørsmålet ligg hos agentane forma verkar på, og er ei vurdering (7.2), ikkje ei forklaring.}
+  \prop{9.5}{o}{Det som til sjuande og sist avgjer om ei forklaring, ei vurdering eller eit mynde-krav held, er om dei står seg mot det som faktisk skjer: konsekvensar observerte i materiale, handling, bruk eller mellom agentar (8.1, 8.4, 7.32).}
+  \prop{9.6}{t}{Forma er ikkje det same som materialet, produksjonen, bruken, historia eller agentane som møter henne (kap. 5--7). Kvar av dei set trykk, avgrensingar eller rekkevidd (2.2, 5.3, 6.4). Forma er det som står att når alle desse har verka saman gjennom formingsreglane (6.10).}
+  \prop{9.7}{t}{Difor er den siste prøva aldri traktaten sjølv, men den realiserte konfigurasjonen: det som, etter at forventing møtte trykk, framleis er tilfelle (jf. 1).}
+```
+
