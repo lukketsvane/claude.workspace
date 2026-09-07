@@ -26,12 +26,15 @@ jobs:
           mkdir -p quality-proof
           base64 -d formlaere-imagegen/reference/approved-style.jpg.b64 > quality-proof/approved-style.jpg
           test -s quality-proof/approved-style.jpg
+          file quality-proof/approved-style.jpg
 
-      - name: Build a strict hidden composition blueprint
+      - name: Build strict references and quality dependencies
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y -qq librsvg2-bin libopenblas-dev
+          sudo apt-get install -y -qq librsvg2-bin libopenblas-dev imagemagick python3-pil python3-numpy
+          convert quality-proof/approved-style.jpg -colorspace sRGB -type TrueColor quality-proof/approved-style.png
+          file quality-proof/approved-style.png
           cat > quality-proof/blueprint.svg <<'SVG'
           <svg xmlns="http://www.w3.org/2000/svg" width="768" height="512" viewBox="0 0 768 512">
             <rect width="768" height="512" fill="white"/>
@@ -72,7 +75,7 @@ jobs:
           PROMPT='A finished black-and-white conceptual figure for a severe philosophical treatise. The FIRST reference image is the binding visual style: exact whiteness, restrained fine black line weight, clean simple geometry, classical serif labels, generous empty space, no texture, no landscape illustration, no sketchiness, no shading. The SECOND reference image is the binding composition and topology: preserve its contour relationships, dot groups, label count and spatial structure. Render a new polished figure that looks as if it belongs on exactly the same printed page as the first reference. It must read as a precise diagram, not a mountain drawing. Pure white background. Thin controlled black ink. Labels only haug and stilart, spelled exactly. No extra marks, no decorative flourish, no gray, no axes, no frame.'
           for SEED in 260907 260908; do
             ./iris -d flux-klein-4b-base \
-              -i "$GITHUB_WORKSPACE/quality-proof/approved-style.jpg" \
+              -i "$GITHUB_WORKSPACE/quality-proof/approved-style.png" \
               -i "$GITHUB_WORKSPACE/quality-proof/blueprint.png" \
               -W 768 -H 512 -s 10 -g 4.0 -S "$SEED" \
               -p "$PROMPT" \
@@ -83,8 +86,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          from PIL import Image, ImageFilter
-          import numpy as np, glob, shutil, os
+          from PIL import Image
+          import numpy as np, glob, shutil
           ref=np.array(Image.open('quality-proof/blueprint.png').convert('L').resize((384,256)),dtype=float)
           re=(ref<220).astype(float)
           best=None
@@ -92,7 +95,6 @@ jobs:
           for fn in glob.glob('quality-proof/candidate-*.png'):
               a=np.array(Image.open(fn).convert('L').resize((384,256)),dtype=float)
               e=(a<220).astype(float)
-              # reward overlap with hidden scaffold, punish ink bloat and dark background
               overlap=(e*re).sum()/(re.sum()+1e-9)
               ink=e.mean()
               target=re.mean()
