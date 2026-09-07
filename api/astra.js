@@ -13,7 +13,9 @@ export default async function handler(req, res) {
     const prompt = req.body && req.body.prompt ? String(req.body.prompt) : '';
     if (!prompt) return res.status(400).json({ error: 'missing_prompt' });
 
-    const token = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
+    const token = process.env.AI_GATEWAY_API_KEY
+      || process.env.VERCEL_OIDC_TOKEN
+      || String(req.headers['x-vercel-oidc-token'] || '');
     if (!token) return res.status(500).json({ error: 'missing_gateway_auth' });
 
     const upstream = await fetch('https://ai-gateway.vercel.sh/v1/responses', {
