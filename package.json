@@ -1,5 +1,8 @@
 {
   "name": "claude-workspace",
   "private": true,
-  "description": "Static workspace: block loops (blocks/) and Pegbox (pegbox/). No build step."
+  "description": "Static workspace: block loops (blocks/) and Pegbox (pegbox/). No build step.",
+  "dependencies": {
+    "@vercel/oidc": "latest"
+  }
 }
