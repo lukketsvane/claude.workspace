@@ -1,0 +1,132 @@
+name: FORMLAERE figure quality v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/formlaere-figure-quality-v2.yml'
+      - 'formlaere-imagegen/reference/approved-style.jpg.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      OPENBLAS_NUM_THREADS: '4'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Restore the actually approved style reference
+        run: |
+          set -euo pipefail
+          mkdir -p quality-proof
+          base64 -d formlaere-imagegen/reference/approved-style.jpg.b64 > quality-proof/approved-style.jpg
+          test -s quality-proof/approved-style.jpg
+
+      - name: Build a strict hidden composition blueprint
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin libopenblas-dev
+          cat > quality-proof/blueprint.svg <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="768" height="512" viewBox="0 0 768 512">
+            <rect width="768" height="512" fill="white"/>
+            <g fill="none" stroke="black" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M92 322 C125 226 196 164 283 170 C343 174 390 213 412 276 C431 330 461 350 511 346 C579 340 637 293 680 219"/>
+              <path d="M129 317 C158 243 211 198 275 202 C328 205 366 239 384 289"/>
+              <path d="M453 324 C476 276 520 235 572 222 C612 212 647 220 676 246"/>
+              <path d="M175 304 C197 259 230 235 270 237 C304 239 330 259 345 294"/>
+              <path d="M500 308 C519 271 548 249 581 244 C611 240 635 249 655 269"/>
+            </g>
+            <g fill="black">
+              <circle cx="258" cy="228" r="6"/><circle cx="274" cy="220" r="6"/><circle cx="288" cy="231" r="6"/>
+              <circle cx="557" cy="245" r="6"/><circle cx="578" cy="239" r="6"/><circle cx="600" cy="246" r="6"/><circle cx="620" cy="256" r="6"/>
+            </g>
+            <g font-family="Times New Roman, Times, serif" font-size="20" fill="black">
+              <text x="245" y="148">haug</text>
+              <text x="575" y="182">stilart</text>
+            </g>
+          </svg>
+          SVG
+          rsvg-convert -w 768 -h 512 quality-proof/blueprint.svg -o quality-proof/blueprint.png
+
+      - name: Build pinned FLUX inference engine
+        run: |
+          set -euo pipefail
+          git clone https://github.com/antirez/iris.c.git /tmp/iris
+          git -C /tmp/iris checkout 9873887d4aa0646c650adc5b86b986d2f653b7e0
+          make -C /tmp/iris blas
+
+      - name: Download higher-quality open base model
+        working-directory: /tmp/iris
+        run: timeout 1500 bash download_model.sh 4b-base
+
+      - name: Generate two reference-guided ACTUAL raster candidates
+        working-directory: /tmp/iris
+        run: |
+          set -euo pipefail
+          PROMPT='A finished black-and-white conceptual figure for a severe philosophical treatise. The FIRST reference image is the binding visual style: exact whiteness, restrained fine black line weight, clean simple geometry, classical serif labels, generous empty space, no texture, no landscape illustration, no sketchiness, no shading. The SECOND reference image is the binding composition and topology: preserve its contour relationships, dot groups, label count and spatial structure. Render a new polished figure that looks as if it belongs on exactly the same printed page as the first reference. It must read as a precise diagram, not a mountain drawing. Pure white background. Thin controlled black ink. Labels only haug and stilart, spelled exactly. No extra marks, no decorative flourish, no gray, no axes, no frame.'
+          for SEED in 260907 260908; do
+            ./iris -d flux-klein-4b-base \
+              -i "$GITHUB_WORKSPACE/quality-proof/approved-style.jpg" \
+              -i "$GITHUB_WORKSPACE/quality-proof/blueprint.png" \
+              -W 768 -H 512 -s 10 -g 4.0 -S "$SEED" \
+              -p "$PROMPT" \
+              -o "$GITHUB_WORKSPACE/quality-proof/candidate-${SEED}.png"
+          done
+
+      - name: Score candidates for structural fidelity and sparseness
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from PIL import Image, ImageFilter
+          import numpy as np, glob, shutil, os
+          ref=np.array(Image.open('quality-proof/blueprint.png').convert('L').resize((384,256)),dtype=float)
+          re=(ref<220).astype(float)
+          best=None
+          rows=[]
+          for fn in glob.glob('quality-proof/candidate-*.png'):
+              a=np.array(Image.open(fn).convert('L').resize((384,256)),dtype=float)
+              e=(a<220).astype(float)
+              # reward overlap with hidden scaffold, punish ink bloat and dark background
+              overlap=(e*re).sum()/(re.sum()+1e-9)
+              ink=e.mean()
+              target=re.mean()
+              bloat=abs(ink-target)
+              white=(a>245).mean()
+              score=3*overlap + white - 4*bloat
+              rows.append((score,fn,overlap,ink,white))
+              if best is None or score>best[0]: best=(score,fn)
+          rows.sort(reverse=True)
+          with open('quality-proof/score.txt','w') as f:
+              for r in rows: f.write(f'{r}\n')
+          shutil.copy2(best[1],'quality-proof/BEST.png')
+          print('BEST',best)
+          PY
+
+      - name: Upload proof set
+        uses: actions/upload-artifact@v4
+        with:
+          name: formlaere-figure-quality-v2
+          path: quality-proof/
+          if-no-files-found: error
+
+      - name: Preserve the chosen proof on main for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p formlaere-imagegen/quality-proof-v2
+          cp quality-proof/BEST.png formlaere-imagegen/quality-proof-v2/BEST.png
+          cp quality-proof/score.txt formlaere-imagegen/quality-proof-v2/score.txt
+          cp quality-proof/blueprint.svg formlaere-imagegen/quality-proof-v2/blueprint.svg
+          printf 'model=FLUX.2-klein-4B-base\nsteps=10\nguidance=4.0\nstyle_reference=approved user figure\ncomposition_reference=hidden blueprint\nactual_raster_generation=yes\nrun=%s\n' "$GITHUB_RUN_ID" > formlaere-imagegen/quality-proof-v2/provenance.txt
+          git config user.name 'formlaere-image-bot'
+          git config user.email '41840333+lukketsvane@users.noreply.github.com'
+          git add formlaere-imagegen/quality-proof-v2
+          git commit -m 'Preserve improved reference-guided figure proof v2'
+          git push origin HEAD:main
