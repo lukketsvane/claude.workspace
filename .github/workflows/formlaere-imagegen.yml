@@ -1,0 +1,49 @@
+name: FORMLAERE actual image generation
+on:
+  push:
+    branches: [imagegen-figures-20260907]
+    paths:
+      - '.github/workflows/formlaere-imagegen.yml'
+      - 'formlaere-imagegen/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check image API credential
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY is not configured for this repository. Copilot credentials cannot authenticate the OpenAI Images API."
+            exit 1
+          fi
+          echo "Image API credential is configured."
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image client
+        run: python -m pip install 'openai>=2,<3' 'pillow>=11,<13'
+      - name: Generate ten separate images using gpt-image-2
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python formlaere-imagegen/image_gen.py generate-batch \
+            --input formlaere-imagegen/prompts.jsonl \
+            --out-dir output/imagegen \
+            --model gpt-image-2 --size 1536x1024 --quality high \
+            --concurrency 1 --max-attempts 1 --fail-fast --no-augment
+      - name: Preserve generated images for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: formlaere-actual-generated-images
+          path: |
+            output/imagegen/*.png
+            formlaere-imagegen/README.md
+            formlaere-imagegen/prompts.jsonl
+          if-no-files-found: warn
