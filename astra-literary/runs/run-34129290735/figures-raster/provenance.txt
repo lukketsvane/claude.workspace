@@ -1,0 +1,6 @@
+model=black-forest-labs/FLUX.2-klein-4B
+engine=antirez/iris.c
+engine_commit=9873887d4aa0646c650adc5b86b986d2f653b7e0
+steps=6
+size=896x576
+workflow_run=34129290735

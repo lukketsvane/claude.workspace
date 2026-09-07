@@ -1,60 +1,62 @@
-```latex
 \silentchapter{Proposisjonar}{proposisjonar}
 
 \begin{widebody}
 \footnotesize
-\textit{d} står for definisjon, \textit{a} for postulat, \textit{t} for teorem, \textit{o} for observasjon, \textit{i} for illustrasjon. Kvart merke fortel korleis proposisjonen er vunne, ikkje kva den er verd.
+\textit{d} står for definisjon, \textit{a} for postulat, \textit{t} for teorem, \textit{o} for observasjon, \textit{i} for illustrasjon. Merket seier korleis ein proposisjon er vunnen, ikkje kva han er verd.
 \end{widebody}
 
 \vspace{6mm}
 
-\mainprop{1}{}{Alt som finst, finst som ein bestemt samanheng mellom avgrensa delar.}
-  \prop{1.1}{d}{Eit \textbf{objekt} er ein del som kan inngå i ei samanheng utan sjølv å bli delt vidare.}
-  \prop{1.2}{d}{Ein \textbf{konfigurasjon} er ei bestemt samanheng mellom eit avgrensa sett objekt.}
-  \prop{1.3}{d}{\textbf{Forma} til ein konfigurasjon er mønsteret av samanhengar mellom objekta, uavhengig av kva objekt som fyller kvar plass.}
-    \prop{1.31}{t}{To konfigurasjonar med same objekt, men ulikt mønster, har ulik form.}
-    \prop{1.32}{t}{To konfigurasjonar med ulike objekt, men same mønster, har same form.}
-  \prop{1.4}{t}{Forma kan gå att i fleire konfigurasjonar. Kvar konfigurasjon finst likevel berre éin gong.}
+\mainprop{1}{}{Alt som finst, står. Alt som hender med det som står, er eitt og same forsøk.}
+  \prop{1.1}{d}{Eit forsøk byter ein avgrensa del av det som står og lèt resten vere urørt.}
+    \prop{1.11}{d}{Etter eit forsøk gjeld eitt av to ord: det som står, \textbf{held} — eller det spring attende, det \textbf{fell}.}
+    \prop{1.12}{a}{Same forsøk, gjort om att på same ting, kan halde éin gong og falle ein annan.}
+    \prop{1.13}{t}{Eit forsøk kan sjølv vere den avgrensa delen eit anna forsøk byter.}
+  \prop{1.2}{d}{Eit forsøk som berre er tenkt, ikkje gjort, kallar vi ein hypotese.}
+    \prop{1.21}{t}{Ein hypotese held, fell, eller står uprøvd. Eit fjerde utfall finst ikkje.}
 
-\flowchapter{2 Ein regel for å byte ut ein del}{ein regel for aa byte ut ein del}
-\mainprop{2}{}{Éin konfigurasjon kan bli til ein annan ved at ein avgrensa del av han vert bytt ut, medan resten står urørt.}
-  \prop{2.1}{d}{Ein \textbf{formingsregel} er ein fast operasjon: han peikar ut ein del av ein konfigurasjon og byter han med ein annan del.}
-  \prop{2.2}{t}{Brukt gjentekne gonger frå ein gjeven konfigurasjon når éin eller fleire formingsreglar fram til eit heilt sett andre konfigurasjonar. Dette settet er \textbf{feltet} til konfigurasjonen.}
-  \prop{2.3}{d}{Ein konfigurasjon er \textbf{framstilt} når han faktisk er bytt fram til.}
-    \prop{2.31}{d}{Ein konfigurasjon er \textbf{nåbar} for eit gjeve sett formingsreglar når han ligg i feltet til ein framstilt konfigurasjon, utan sjølv å vere det.}
-    \prop{2.32}{d}{Ein konfigurasjon er \textbf{ikkje nåbar} for eit gjeve sett formingsreglar når ingen av dei, brukt kor mange gonger som helst, når fram til han.}
-    \prop{2.33}{t}{2.31 og 2.32 nemner formingsreglane i sjølve definisjonen. At noko er ikkje nåbart, seier difor ikkje noko om konfigurasjonen åleine — det seier at desse reglane ikkje når han.}
-    \prop{2.34}{t}{Vert objekta feltet er utrekna frå bytte ut eller endra, oppstår eit nytt felt med sine eigne nåbare og ikkje-nåbare konfigurasjonar. Det gamle feltet held opp å gjelde.}
+\flowchapter{2 Vekt}{vekt}
+\mainprop{2}{}{Ikkje alt som står, er like lett å nå med eit forsøk.}
+  \prop{2.1}{d}{Vekta til noko som står, er talet på ulike kjeder av forsøk, frå ulikt utgangspunkt, som endar der.}
+    \prop{2.11}{t}{Av 1.12 følgjer: høg vekt gjer ikkje neste forsøk sikrare. Ho gjev berre fleire vegar dit.}
+    \prop{2.12}{o}{Låg vekt held stundom likevel. Vekta avgjer ikkje om noko står — berre kor lett det er å nå.}
 
-\flowchapter{3 Vekt og stabile punkt}{vekt og stabile punkt}
-\mainprop{3}{}{Innanfor det nåbare når ikkje alle konfigurasjonar fram på like mange måtar.}
-  \prop{3.1}{d}{\textbf{Vekta} til ein konfigurasjon er talet på uavhengige kjeder av formingsregel-bruk, rekna frå ulike framstilte konfigurasjonar, som endar i han.}
-  \prop{3.2}{d}{Eit \textbf{stabilt punkt} er ein konfigurasjon der ingen tilgjengeleg formingsregel fører til høgare vekt.}
-    \prop{3.21}{o}{Kjeder greinar seg. Eit felt har difor ofte fleire stabile punkt, ikkje eitt.}
+\flowchapter{3 Endra grunn}{endra grunn}
+\mainprop{3}{}{Kvart forsøk som held, endrar det som seinare forsøk møter.}
+  \prop{3.1}{t}{Difor er grunnen eit forsøk møter, alltid summen — vekta, 2.1 — av dei forsøka som gjekk føre.}
+    \prop{3.2}{t}{Same forsøk, møtt med ulik grunn, kan halde tidleg og falle seinare, utan at forsøket sjølv er endra.}
 
-\flowchapter{4 Vekta endrar seg}{vekta endrar seg}
-\mainprop{4}{}{Kvar gong ein konfigurasjon vert framstilt, endrar det vekta til andre konfigurasjonar i feltet.}
-  \prop{4.1}{t}{Ein ny framstilling legg til minst éi kjede for alt ho når fram til.}
-  \prop{4.2}{t}{Vekta som møter neste framstilling er difor alltid vekta etter dei føregåande. Kvar framstilling arvar ei rekning og legg til si eiga.}
-    \prop{4.21}{o}{Endringa kan vere umerkeleg lenge — og så, brått, flytte det stabile punktet.}
+\flowchapter{4 Rekkevidd}{rekkevidd}
+\mainprop{4}{}{Ikkje alle forsøk er opne for kven som helst.}
+  \prop{4.1}{d}{Der forsøk på noko som står, er avgrensa til ein fast krins av utgangspunkt, kallar vi krinsen ein agent, og avgrensinga hans rekkevidd.}
+    \prop{4.2}{t}{Ein agent kan difor aldri prøve alt som står — berre det rekkevidda hans når.}
+    \prop{4.3}{t}{Sidan vekta til noko som står er summen av forsøk frå ulike utgangspunkt (2.1), og ein agent berre når nokre av dei, kan ingen agent åleine kjenne heile vekta til det han prøver.}
 
-\flowchapter{5 Agentar held ein del stabil}{agentar held ein del stabil}
-\mainprop{5}{}{Nokre konfigurasjonar brukar sjølve formingsreglar for å halde ein avgrensa del av seg stabil.}
-  \prop{5.1}{d}{Ein \textbf{agent} er ein konfigurasjon med ein avgrensa del, den \textbf{halden delen}, som han held lik seg sjølv ved å bruke formingsreglar på resten av seg.}
-    \prop{5.11}{d}{\textbf{Avviket} til ein agent er skilnaden mellom halden del og resten — den skilnaden agenten arbeider for å minske.}
-  \prop{5.2}{d}{\textbf{Rekkevidda} til ein agent er den delen av feltet formingsreglane hans kan nå.}
-  \prop{5.3}{t}{Ein agent bruker formingsreglar på nytt for kvar framstilling. Ingen halden del er stabil av seg sjølv.}
-  \prop{5.4}{d}{\textbf{Tilgjenget} til ein konfigurasjon, for ein gjeven agent, er dei formingsreglane konfigurasjonen let akkurat den agenten bruke — fastsett av rekkevidda hans åleine, ikkje av kva den halden delen er retta mot. To agentar med same halden del, men ulik rekkevidd, kan difor få ulikt tilgjenge frå same konfigurasjon.}
+\flowchapter{5 Møte}{møte}
+\mainprop{5}{}{Det same standande kan vere mål for fleire agentar sine forsøk på same tid.}
+  \prop{5.1}{d}{Når to eller fleire agentar prøver det same standande på same tid, kallar vi det eit møte.}
+    \prop{5.2}{t}{I eit møte kan forsøka krevje same avgrensa del.}
+    \prop{5.3}{t}{Av 1.1 følgjer: då held berre eitt av dei. Dei andre fell — ikkje av eiga veikskap, men av at delen dei trong, alt var bytt.}
 
-\flowchapter{6 Grensa for vekt}{grensa for vekt}
-\mainprop{6}{}{Ingen framstilt konfigurasjon er endeleg.}
-  \prop{6.1}{t}{Sidan framstilling endrar vekt, er eit stabilt punkt stabilt berre inntil neste framstilling.}
-  \prop{6.2}{t}{Fleire kjeder kan nå same punkt utan å kjenne kvarandre, utan at agentane bak dei har rekkevidd til kvarandre sine kjeder. Om eit punkt er stabilt, avgjer vekta åleine — ikkje kven som når det, eller korleis.}
+\flowchapter{6 Verknad mellom agentar}{verknad mellom agentar}
+\mainprop{6}{}{Ein agent kan endre det ein annan agent møter, utan at dei nokon gong deler eit forsøk.}
+  \prop{6.1}{t}{Av 3.1 og 4.1 følgjer: éin agent sin historie kan endre vekta ein annan agent finn, sjølv om ingen av rekkevidda deira når inn i den andre sin krins.}
+    \prop{6.2}{o}{Ein agent kan difor verke på ein annan utan å vite det, og den andre kan bere verknaden utan å vite kven som gjorde han.}
 
-\flowchapter{7 Ringen sluttar seg}{ringen sluttar seg}
-\mainprop{7}{}{Denne teksten er sjølv ein konfigurasjon: framstilt ved at formingsreglar er bytt ut, ledd for ledd, i tidlegare utkast.}
-  \prop{7.1}{t}{Ein konfigurasjon har rekkevidd berre gjennom ein agent (5.2). Teksten åleine har inga; ho får rekkevidd berre gjennom den som les henne, og då er det lesarens rekkevidd, ikkje teksten sin.}
-  \prop{7.2}{o}{Det som ikkje er nått, er ikkje sagt.}
-  \prop{7.3}{i}{Alt som finst for denne teksten, er det som ligg i rekkevidda ho får låna. Resten finst — men ikkje for henne.}
-```
+\flowchapter{7 Forklaring og vurdering}{forklaring og vurdering}
+\mainprop{7}{}{Å vite kvifor noko heldt, er ikkje det same som å vite kor mykje det er verdt at det heldt.}
+  \prop{7.1}{d}{Ei forklaring er eit forsøk som peikar ut kva tidlegare forsøk avgjorde eit gjeve utfall.}
+  \prop{7.2}{d}{Ei vurdering er ei rangering av det som står, etter vekt (2.1) — ikkje etter kva som avgjorde det.}
+    \prop{7.3}{t}{Av 7.1 og 7.2 følgjer: to ting kan stå med lik vekt og ulik forklaring, eller lik forklaring og ulik vekt. Forklaring og vurdering møtest aldri av naudsyn.}
 
+\flowchapter{8 Mynde}{mynde}
+\mainprop{8}{}{Å avgjere kva forsøk som er opne for ein annan agent, er sjølv eit forsøk.}
+  \prop{8.1}{t}{Ei rekkevidd (4.1) finst. Av mainprop 1 følgjer: alt som finst, står. Difor står ho òg — og kan sjølv vere den avgrensa delen eit forsøk byter.}
+    \prop{8.2}{d}{Eit forsøk som byter ei rekkevidd, i staden for det rekkevidda gjeld, kallar vi eit myndeforsøk. Mynde er verknaden eit slikt forsøk har på ein annan agent.}
+    \prop{8.3}{t}{Eit myndeforsøk krev difor korkje forklaring (7.1) eller vurdering (7.2) — som alle forsøk (1.11), er det avgjort ved om det held, ikkje ved om det er grunngjeve.}
+    \prop{8.4}{o}{Den som prøver eit myndeforsøk på sin eigen rekkevidd, vender same rørsla mot seg sjølv.}
+
+\flowchapter{9 Denne teksten}{denne-teksten}
+\mainprop{9}{}{Denne traktaten er sjølv noko som står, bygd av forsøk — kvart utkast eit bytt av ein avgrensa del, resten urørt.}
+  \prop{9.1}{t}{Vekta hans (2.1) er talet på lesarar sine forsøk på han — ikkje talet på setningar han inneheld.}
+    \prop{9.2}{t}{Å lese er difor sjølv eit forsøk, av den slags 8.2 nemner. Det byter ikkje traktaten. Det byter lesaren sin rekkevidd.}

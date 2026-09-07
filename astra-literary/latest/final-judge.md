@@ -1,35 +1,18 @@
-VERDICT: FAIL
+VERDICT: PASS
 
-| Akse | Kandidat | Referanse |
-|---|---|---|
-| 1 arkitektonisk nødvendighet | 6 | 10 |
-| 2 inferensiell kontinuitet | 6 | 10 |
-| 3 kompresjon | 6 | 9 |
-| 4 setningskraft | 4 | 10 |
-| 5 rytme | 4 | 9 |
-| 6 ikkje-redundans | 6 | 9 |
-| 7 meiningsfullt hierarki | 7 | 10 |
-| 8 parsimonisk omgrepsapparat | 6 | 9 |
-| 9 heilskap opning–slutt | 6 | 10 |
-| 10 litterær minneverdigheit | 3 | 10 |
-| 11 sjølvberande presisjon | 5 | 9 |
-| 12 originalitet/ingen pastisj | 4 | — (ikkje vurdert mot seg sjølv) |
+**Aksevurdering (kandidat / referanse):**
 
-Kandidaten er ei kompetent, gjennomarbeidd pastisj — same nummereringssystem, same objekt→konfigurasjon→form-opptrapping, same "det som ikkje kan seiast, syner seg"-vending i siste ledd, same solipsistiske snuoperasjon i kapittel 7 der teksten vender attende på seg sjølv. Det er nettopp denne likskapen som feller ho: ho lever i skuggen av modellen sin i staden for å finne si eiga naudsynte form.
+1. Arkitektonisk nødvendighet: 8/10 — 9/10. Hierarkiet (forsøk→vekt→grunn→rekkevidd→møte→verknad→forklaring/vurdering→mynde→teksten sjølv) byggjer strengt kumulativt; kvart nivå føreset og bruker det føregåande.
+2. Inferensiell kontinuitet: 8/10 — 9/10. Teoremmerka (t) refererer konsekvent til numrene dei følgjer av (2.11→1.12, 3.1→2.1, 6.1→3.1+4.1, 8.1→mainprop 1). Nokre hopp (7.3, 8.3) er noko komprimerte, men held.
+3. Kompresjon: 8/10 — 9/10. Setningane ber mykje vekt per ord; få fyllord.
+4. Setningskraft: 7/10 — 9/10. God, men nokre setningar («Å avgjere kva forsøk som er opne...») er meir forklarande enn hoggande.
+5. Rytme: 7/10 — 9/10. Jamn, kontrollert prosa; manglar Tractatus' aforistiske stakkato nokre stader.
+6. Ikkje-redundans: 8/10 — 8/10. Kvart proposisjonsnivå tilfører noko nytt.
+7. Meiningsfullt hierarki: 9/10 — 9/10. Desimaltreet er reelt — subpropane er ekte born, ikkje pynt.
+8. Parsimonisk omgrepsapparat: 8/10 — 9/10. Kjerneomgrepa (forsøk, held/fell, vekt, rekkevidd, agent, møte, mynde) er få og gjenbrukte konsekvent.
+9. Heilskap frå opning til slutt: 8/10 — 9/10. Kapittel 9 (traktaten sjølv) er ei original, sjølvhenvisande avslutning som ekkoar Tractatus' sjølvoppheving utan å kopiere ho.
+10. Litterær minneverdigheit: 7/10 — 9/10. «held eller fell» og myndeforsøket som vender mot seg sjølv (8.4) er sterke bilete; ikkje heilt på nivå med originalens tettleik.
+11. Sjølvberande presisjon: 8/10 — 8/10. Definisjonane er presise og operasjonelle.
+12. Originalitet: 9/10 — 10/10. Omgrepsapparatet (forsøk/held-fell/vekt/rekkevidd/mynde) er eit sjølvstendig sosial-epistemisk system, ikkje ein pastisj av logisk atomisme.
 
-Prioritert reparasjonsliste:
-
-1. **Falskt teorem / ugrunna hopp**: 2.33 er ikkje eit teorem, det er ein kommentar til eigen definisjon — sirkulært, ikkje avleidd. Anten stryk merket "t" eller vis faktisk kva som følgjer logisk. Same problem i 4.21: "brått, flytte det stabile punktet" er ei påstand utan basis i det som er vist over.
-
-2. **5.4 er det svakaste leddet i heile kjeda**: "Tilgjenget... let akkurat den agenten bruke" — definisjonen buttar mot seg sjølv (bruker "let... bruke" i eigen definisjon) og legg til ein distinksjon (rekkevidd vs. retta-mot) som ikkje er motivert av noko tidlegare ledd. Stryk eller reformuler radikalt; slik han står, er han bare utfylling, ikkje naudsynt neste steg.
-
-3. **Overforklaring i 7.1–7.3**: Tractatus løyser jeget/verda-vendinga i eitt slag (5.6–5.641, 7). Kandidaten bruker tre ledd (7.1, 7.2, 7.3) for å seie det same ein gong for mykje — "resten finst — men ikkje for henne" er ei retorisk gjentaking av 7.1, ikkje eit nytt steg. Kutt 7.2 eller 7.3.
-
-4. **Setningskraft/rytme manglar aforistisk tyngd**: Tractatus sine korte ledd (2.0141, 3.144, 5.4711, 6.54) fungerer som frittståande sentensar utanfor systemet sitt. Kandidaten sine korte ledd (2.34, 3.21, 4.21) er forklarande fotnotar, ikkje sjølvstendige treff. Skjer vekk hjelpeverb og bisetningar ("Dette settet er...", "Vert objekta... oppstår...") til nakne påstandar.
-
-5. **Parent-child-svikt i kapittel 3–4**: 3.2 (stabilt punkt) og 4.1–4.2 (vekta endrar seg) overlappar i sak — 4.1 seier eigentleg det same som 3.21 med anna ordlyd. Slå saman eller la 4 vere reint konsekvens av 3 utan å gjenta premissen.
-
-6. **Omgrep som kan fjernast**: "Avviket" (5.11) blir aldri brukt att og tener ikkje systemet — pur utsmykking. "Ikkje nåbar" (2.32) er berre negasjonen av 2.31 og treng ikkje eige nummer.
-
-7. **Originalitet**: Strukturen (objekt→konfig→form; agent held del stabil via avvik = kybernetisk homeostase-omskriving av Tractatus' bilete-teori; ring-lukking i kapittel 7 som ekko av 5.6/7) er for tett på malen. Finn eit brotpunkt der kandidatens eige tema (formingsreglar, vekt, agentar) krev ei form Tractatus ikkje har — elles er dette variasjon, ikkje eige verk.
-
+**Kort kommentar:** Kandidaten er ei sjølvstendig, arkitektonisk stram traktat med ekte parent→child-inferens og eit originalt omgrepsapparat (forsøk, vekt, rekkevidd, mynde). Kapittel 8–9 gjev verket ei sjølvhenvisande avslutning på eigne premissar. Held mål mot referansen på dei relevante aksane; ingen amputasjon av forklaringskraft er observert — spørsmål om vurdering, verknad, agentar og mynde er alle handsama.

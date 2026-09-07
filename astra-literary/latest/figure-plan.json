@@ -1,0 +1,72 @@
+[
+  {
+    "file": "figure-01",
+    "after": "1.11",
+    "purpose": "Gjer synleg det grunnleggjande skiljet mellom eit forsøk som held og eit som fell, som eitt same forgreiningsaugeblikk.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. A single thin hand-drawn line travels from the lower left toward a short solid horizontal ground line near the center. At the point of contact the single line forks into two distinct continuations: one branch fuses seamlessly into the ground line, becoming indistinguishable from it, drawn slightly thicker where fused; the other branch curls sharply back and away from the ground in a small tight recoiling loop, ending in open air, not touching anything. Sparse composition, huge white negative space, only these few strokes, subtle irregular human hand tremor in the linework rather than a perfect vector curve. No color, no gray wash, no shading, no arrows, no icons, no boxes, no grid, no diagram frame. No text, no labels, no numbers.",
+    "seed": 41207
+  },
+  {
+    "file": "figure-02",
+    "after": "1.21",
+    "purpose": "Klargjer den modale tredelinga mellom ein hypotese som held, fell, eller står uprøvd.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. From a single small origin point at the left, three thin hand-drawn threads fan outward toward a short solid horizontal ground line on the right side of the frame. The first thread reaches the ground line and fuses into it completely. The second thread reaches the ground line then recoils sharply backward into a small tight loop, clearly separated from the ground. The third thread stops abruptly in open white space well before reaching the ground line, its end left blunt and unresolved, not touching the ground at all. Extremely sparse, most of the frame empty white, delicate uneven hand-drawn quality in each line. No color, no gray wash, no shading, no arrows, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 87651
+  },
+  {
+    "file": "figure-03",
+    "after": "2.11",
+    "purpose": "Viser at høg vekt gjev fleire vegar til eit punkt utan å gjere neste forsøk sikrare.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. Many thin hand-drawn lines of varying length and angle converge from different directions across the frame onto a single small solid dot near the center-right, like a loose sparse bundle of independent paths all arriving at the same tiny point. Among them, one additional thin line approaches from the upper left but stops short in blank white space just before reaching the dot, leaving a small visible gap, not touching it. The converging lines are unevenly spaced and slightly irregular, giving a handmade feel rather than a perfect radial diagram. Vast empty white space surrounds the cluster. No color, no gray wash, no shading, no arrowheads, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 15398
+  },
+  {
+    "file": "figure-04",
+    "after": "3.2",
+    "purpose": "Viser korleis tidlegare forsøk lagrar seg som grunn, slik at same forsøk kan halde tidleg og falle seinare.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. Several thin horizontal hand-drawn lines are stacked closely on top of one another near the bottom of the frame, like accumulated sediment layers, with the lowest layers drawn first and additional layers added above, slightly irregular and hand-inked. A single short vertical stroke descends from above on the left side and fully pierces through the thin early stack into the topmost layer, marked by where it touches the earliest single line. A second, near-identical vertical stroke descends further to the right where the stack has grown much thicker, and this second stroke stops short, unable to penetrate past the accumulated layers, ending abruptly above them. Large areas of blank white space above and to the sides. No color, no gray wash, no shading, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 63042
+  },
+  {
+    "file": "figure-05",
+    "after": "4.3",
+    "purpose": "Gjer synleg at ein agent sin rekkevidd berre når nokre av alle stader som står, og at heile vekta difor er utilgjengeleg for han.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. The whole frame is scattered with many tiny irregular hand-drawn dots spread loosely across the white space, representing countless separate standing things, extending faintly toward all edges of the frame. A single thin closed hand-drawn loop, roughly circular but slightly irregular and imperfect, is drawn enclosing only a small cluster of these dots near the center. The dots inside the loop are fully enclosed; the great majority of dots lie clearly outside the loop's boundary across the rest of the frame, untouched and unenclosed. No color, no gray wash, no shading, no icons, no boxes, no grid lines, no diagram frame. No text, no labels, no numbers.",
+    "seed": 90475
+  },
+  {
+    "file": "figure-06",
+    "after": "5.3",
+    "purpose": "Viser eit møte der fleire forsøk krev same del samtidig, og berre eitt held medan dei andre fell utan avgjerd på førehand.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. Four or five thin hand-drawn lines approach a single small solid dot near the center of the frame from clearly different directions and angles, as if arriving at the same instant. One of these lines passes directly through the dot and continues slightly beyond it, fused and unbroken. The remaining lines each stop just short of the dot, each ending in a small abrupt recoiling kink or curl a hair's breadth away, not touching the dot at all. The lines are unevenly spaced around the point, irregular hand tremor in each stroke. Wide empty white space fills the rest of the frame. No color, no gray wash, no shading, no arrowheads, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 30861
+  },
+  {
+    "file": "figure-07",
+    "after": "6.1",
+    "purpose": "Klargjer korleis éin agent kan endre det ein annan møter utan at rekkeviddene deira nokon gong deler eit forsøk.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. Two separate closed loops, each roughly circular but hand-drawn and slightly irregular, are positioned apart from one another, one in the left third of the frame and one in the right third, with a large empty gap of white space between them and no overlap or direct connecting line touching both. Inside the left loop, a short solid horizontal ground line sits with a small mark fused into it. From that mark, a very faint, thin, broken or dotted-looking hand-drawn line curves gently through the empty space between the loops, arriving at a short horizontal ground line inside the right loop, subtly bending or displacing that ground line slightly where it arrives, without ever touching the boundary of either loop itself. No color, no gray wash, no shading, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 54219
+  },
+  {
+    "file": "figure-08",
+    "after": "7.3",
+    "purpose": "Viser at forklaring og vurdering er to ulike ordningar av det same som står, som ikkje treng falle saman.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. A horizontal row of small solid dots of varying sizes is drawn across the middle of the frame, evenly spaced. Above the row, a single smooth stepped hand-drawn line connects the dots strictly in order of their size from smallest to largest, rising steadily left to right like a simple ranking staircase. Below the row, a separate set of thin hand-drawn connecting lines links the same dots in a completely different, crossing, tree-like branching pattern that does not follow the size order at all, some lines connecting distant dots while skipping adjacent ones. The two connection patterns, one above and one below the row, never touch each other. Large empty white margins above and below. No color, no gray wash, no shading, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 76830
+  },
+  {
+    "file": "figure-09",
+    "after": "8.4",
+    "purpose": "Viser myndeforsøket vendt mot seg sjølv, der agenten byter si eiga rekkevidd.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. A single closed loop, roughly circular but hand-drawn and slightly irregular, sits near the center of the frame. From a point on the inside of the loop's boundary, a short thin curved hand-drawn line extends inward and then arcs back outward, reaching and visibly redrawing or thickening a different segment of that same loop's own boundary, altering the loop's edge from within itself, as if the boundary reaches back to touch and reshape its own line. No other marks, no second loop, no dots. Vast empty white space surrounds the single self-touching loop. No color, no gray wash, no shading, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 20984
+  },
+  {
+    "file": "figure-10",
+    "after": "9.2",
+    "purpose": "Gjer synleg at lesing ikkje endrar traktaten sjølv, men lesaren si eiga rekkevidd.",
+    "prompt": "Minimalist black ink line drawing on a pure white background, landscape 3:2. On the left side of the frame, a small closed rectangle made of thin hand-drawn lines sits perfectly still and unchanged, its edges crisp and unaltered, representing a fixed static object. On the right side of the frame, a separate small closed loop, hand-drawn and irregular, is shown mid-change, its boundary visibly bulging outward on one side compared to a faint fainter ghost outline of its earlier smaller shape drawn just beneath it, showing the loop expanding while the rectangle beside it remains completely static. The two shapes do not touch or overlap. Large empty white space surrounds both. No color, no gray wash, no shading, no icons, no boxes, no diagram frame. No text, no labels, no numbers.",
+    "seed": 68317
+  }
+]

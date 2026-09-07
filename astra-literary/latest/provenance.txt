@@ -1,2 +1,5 @@
-workflow_run=34122070385
-commit=fa3644e31c26e6669219a36482ef202d6264e272
+workflow_run=34129290735
+workflow_version=v4-raster
+commit=afa8d89f1f9039a64314041e14fb6e206afe1173
+final_verdict=VERDICT: PASS
+image_model=FLUX.2-klein-4B
