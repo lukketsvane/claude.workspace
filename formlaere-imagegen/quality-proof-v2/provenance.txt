@@ -1,0 +1,7 @@
+model=FLUX.2-klein-4B-base
+steps=10
+guidance=4.0
+style_reference=approved user figure
+composition_reference=hidden blueprint
+actual_raster_generation=yes
+run=34130767990
