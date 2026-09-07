@@ -3,6 +3,7 @@
   "private": true,
   "description": "Static workspace: block loops (blocks/) and Pegbox (pegbox/). No build step.",
   "dependencies": {
-    "@vercel/oidc": "latest"
+    "@vercel/oidc": "latest",
+    "ai": "latest"
   }
 }
