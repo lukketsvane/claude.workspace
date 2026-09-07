@@ -17,7 +17,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run browser probe
         run: |
-          cat > /tmp/probe.mjs <<'JS'
+          cat > probe.mjs <<'JS'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({headless:true});
           const context = await browser.newContext();
@@ -41,4 +41,4 @@ jobs:
           await browser.close();
           if(!text.includes('ASTRA_OK')) process.exit(2);
           JS
-          node /tmp/probe.mjs
+          node probe.mjs
