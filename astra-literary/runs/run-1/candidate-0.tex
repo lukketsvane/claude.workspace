@@ -1,0 +1,96 @@
+```latex
+\silentchapter{Proposisjonar}{proposisjonar}
+
+\begin{widebody}
+\begin{center}\footnotesize
+\begin{tabular}{@{}lllll@{}}
+\textbf{\textit{d}} definisjon & \textbf{\textit{a}} postulat & \textbf{\textit{t}} teorem & \textbf{\textit{o}} observasjon & \textbf{\textit{i}} illustrasjon \\
+\end{tabular}
+\end{center}
+\end{widebody}
+
+\vspace{6mm}
+
+\mainprop{1}{}{Alt som finst, finst som ein bestemt samanheng mellom avgrensa delar.}
+  \prop{1.1}{d}{Eit \textbf{objekt} er ein del som kan inngå i ei samanheng utan sjølv å bli delt vidare.}
+  \prop{1.2}{d}{Ein \textbf{konfigurasjon} er ei bestemt samanheng mellom eit avgrensa sett objekt.}
+  \prop{1.3}{d}{\textbf{Forma} til ein konfigurasjon er mønsteret av samanhengar mellom objekta i han, uavhengig av kva objekt som fyller kvar plass.}
+    \prop{1.31}{t}{To konfigurasjonar med same objekt, men ulikt mønster mellom dei, har ulik form.}
+    \prop{1.32}{t}{To konfigurasjonar med ulike objekt, men same mønster mellom dei, har same form.}
+  \prop{1.4}{t}{Forma kan difor gå att i fleire konfigurasjonar, medan kvar konfigurasjon sjølv berre finst éin gong, i den bestemte samanhengen ho er (1.2).}
+
+\flowchapter{2 Éin regel for å byte ut ein del}{ein regel for aa byte ut ein del}
+\mainprop{2}{}{Éin konfigurasjon kan bli til ein annan ved at ein avgrensa del av han vert bytt ut, medan resten står urørt.}
+  \prop{2.1}{d}{Ein \textbf{formingsregel} er ein fast operasjon som gjer nett dette: han peikar ut ein del av ein konfigurasjon og byter han med ein annan del, utan å røre resten.}
+  \prop{2.2}{t}{Brukt gjentekne gonger, frå ein gjeven konfigurasjon, når éin eller fleire formingsreglar fram til eit heilt sett andre konfigurasjonar. Vi kallar dette settet \textbf{feltet} til den konfigurasjonen.}
+  \prop{2.3}{d}{Ein konfigurasjon er \textbf{framstilt} når han faktisk er bytt fram til; \textbf{nåbar} når han ligg i feltet (2.2) til ein framstilt konfigurasjon utan sjølv å vere framstilt enno; \textbf{ikkje nåbar} når ingen formingsregel, brukt kor mange gonger som helst, når fram til han.}
+    \prop{2.31}{t}{At ein konfigurasjon er ikkje nåbar, er difor ikkje eit trekk ved konfigurasjonen isolert, men ved forholdet mellom han og dei formingsreglane som finst for dei aktuelle objekta.}
+    \prop{2.32}{t}{Vert objekta feltet er utrekna frå bytte ut eller endra, oppstår eit nytt felt med sitt eige sett nåbare og ikkje-nåbare konfigurasjonar. Det gamle feltet flyttar ikkje grensa si; det held opp å gjelde.}
+
+\flowchapter{3 Vekt og stabile punkt}{vekt og stabile punkt}
+\mainprop{3}{}{Innanfor det nåbare når ikkje alle konfigurasjonar fram på like mange måtar.}
+  \prop{3.1}{d}{\textbf{Vekta} til ein konfigurasjon er talet på uavhengige kjeder av formingsregel-bruk, frå ulike framstilte konfigurasjonar (2.3), som endar i han.}
+  \prop{3.2}{d}{Eit \textbf{stabilt punkt} er ein konfigurasjon der ingen formingsregel som er tilgjengeleg frå han, fører til ein konfigurasjon med høgare vekt.}
+    \prop{3.21}{o}{Sidan kjeder av formingsregel-bruk kan greine seg i mange retningar, er det vanleg at eit felt har fleire stabile punkt, ikkje eitt.}
+  \prop{3.3}{d}{Ein \textbf{stilart} er ei samling framstilte konfigurasjonar som ligg kring same stabile punkt. Grensa til ein stilart er uskarp der kjedene som når punktet, spreier seg lengst frå det.}
+    \prop{3.31}{o}{At to rekker av framstilte konfigurasjonar, utan kjennskap til kvarandre, endar kring same stabile punkt, er foreinleg med at punktet ligg fast i feltets eiga vektfordeling (3.1--3.2). Det avgjer ikkje åleine om dette er tilfellet, eller om det er samantreff.}
+
+\flowchapter{4 Vekta endrar seg}{vekta endrar seg}
+\mainprop{4}{}{Kvar gong ein konfigurasjon vert framstilt, endrar det vekta til andre konfigurasjonar i feltet.}
+  \prop{4.1}{t}{Dette følgjer direkte: ein ny framstilt konfigurasjon (2.3) er eit nytt utgangspunkt for kjeder av formingsregel-bruk, og legg difor til minst éi kjede i vektrekninga (3.1) for alt han når fram til.}
+  \prop{4.2}{t}{Vekta som møter neste framstilling, er difor alltid endra av dei føregåande. Kvar framstilling arvar, og legg til, ei rekning ho ikkje sjølv fullt ut valde.}
+    \prop{4.21}{o}{Over mange framstillingar kan denne akkumulerte endringa vere umerkeleg lenge, og så brått flytte kva som er det stabile punktet (3.2) i ein del av feltet.}
+  \prop{4.3}{t}{Vert nesten alle kjeder av same type gjentekne, medan andre typar formingsregel-bruk uteblir, søkk vekta i feltet saman mot eitt stabilt punkt: kjedetalet (3.1) veks berre der same type kjede blir gjenteke, og søkk relativt alle andre stader.}
+    \prop{4.31}{t}{Ei framstilling som byggjer vidare berre på éin slik dominerande kjedetype, representerer difor ikkje dei andre kjedene som framleis finst i feltet; ho innsnevrar kva som blir sett, ho aukar det ikkje.}
+
+\flowchapter{5 Agentar held ein del stabil}{agentar held ein del stabil}
+\mainprop{5}{}{Nokre konfigurasjonar brukar sjølve formingsreglar for å halde ein avgrensa del av seg stabil.}
+  \prop{5.1}{d}{Ein \textbf{agent} er ein konfigurasjon med ein avgrensa del, den \textbf{halden delen}, som han held mest mogleg lik seg sjølv ved å bruke formingsreglar på resten av seg for å minske \textbf{avviket} mellom halden del og resten.}
+    \prop{5.11}{t}{Definisjonen nemner ikkje kva agenten er bygd av. Kva konfigurasjon som helst som held ein del stabil på denne måten, er ein agent (5.1).}
+  \prop{5.2}{d}{\textbf{Rekkevidda} til ein agent er den delen av feltet (2.2) formingsreglane hans kan nå.}
+  \prop{5.3}{d}{\textbf{Kompetansen} til ein agent er evna til å nå eit stabilt punkt (3.2) i få steg, frå eit vilkårleg utgangspunkt innanfor rekkevidda.}
+  \prop{5.4}{t}{Sidan framstilling endrar vekt (4.1--4.2), og halden del berre kan haldast stabil ved gjenteke bruk av formingsreglar, må ein agent stendig bruke formingsreglar på nytt for å halde same avvik lite. Ingen halden del er stabil av seg sjølv.}
+  \prop{5.5}{d}{\textbf{Tilgjenget} til ein konfigurasjon, for ein gitt agent, er dei formingsreglane konfigurasjonen let akkurat den agenten bruke, gjeve rekkevidda hans (5.2).}
+    \prop{5.51}{t}{Tilgjenget er difor definert ved rekkevidd åleine, ikkje ved kva den halden delen til agenten er retta mot. Same konfigurasjon kan gje ulikt tilgjenge til to agentar med ulik rekkevidd, sjølv om dei har same halden del.}
+
+\flowchapter{6 Fleire agentar formar saman}{fleire agentar formar saman}
+\mainprop{6}{}{Der rekkevidda til fleire agentar dekkjer same del av feltet, vert ein framstilt konfigurasjon der forma av alle samstundes.}
+  \prop{6.1}{d}{Ein agent er \textbf{samansett} når fleire agentar til saman utgjer éin konfigurasjon som sjølv held ein halden del stabil (5.1), sjølv om ingen av dei åleine gjer det.}
+  \prop{6.2}{d}{Ein agent er \textbf{formar} for ein annan, i den grad hans halden del er retta mot den andre sin halden del eller avvik (5.1), og ikkje berre mot resten av feltet.}
+    \prop{6.21}{t}{Å vere formar er difor grada: eit spørsmål om kor stor del av halden delen som er retta slik, ikkje eit anten-eller.}
+  \prop{6.3}{t}{Tilgjenget (5.5) til ein konfigurasjon er definert ved rekkevidd åleine (5.51); det endrar seg difor ikkje med kva ein agent sin halden del er retta mot. Ein konfigurasjon kan gje tilgjenge til formingsreglar ingen agent no rettar seg mot.}
+  \prop{6.4}{d}{\textbf{Føremålet} til ei handling er den delen av agentens halden del som er retta mot å få framstilt ein bestemt konfigurasjon.}
+  \prop{6.5}{d}{\textbf{Verknaden} til ei handling er det som faktisk skjer med feltet og med andre agentars halden delar, uavhengig av føremålet.}
+    \prop{6.51}{t}{Sidan tilgjenge og andre agentars formingsreglar verkar uavhengig av éin agent sitt føremål (6.3), kan føremål og verknad falle saman eller skilje lag.}
+  \prop{6.6}{t}{For ein agent som møter ein framstilt konfigurasjon utan sjølv å ha teke del i framstillinga, fungerer stilarten (3.3) som eit gjenkjenneleg punkt innanfor hans eiga rekkevidd (5.2) -- ikkje som spor etter dei kjedene (3.1) som førte dit, sidan desse kan liggje utanfor akkurat hans rekkevidd.}
+  \prop{6.7}{t}{Ingen framstilt konfigurasjon er endeleg: sidan framstilling endrar vekt (4.1), er eit stabilt punkt (3.2) alltid stabilt berre inntil neste framstilling.}
+
+\flowchapter{7 Forklaring, vurdering og mynde}{forklaring vurdering og mynde}
+\mainprop{7}{}{Å vise kvifor ein konfigurasjon vart framstilt slik ho vart, å seie om ho burde ha vorte det, og å avgjere at nokon må framstille ho slik, er tre ulike ting.}
+  \prop{7.1}{d}{Ei \textbf{forklaring} viser kva formingsreglar, kva vektfordeling (3.1) og kva agentars rekkevidd (5.2) som gjorde nett denne konfigurasjonen til den som vart framstilt.}
+  \prop{7.2}{d}{Ei \textbf{vurdering} rangerer konfigurasjonar etter ein skala valt utanfrå, ikkje etter vekta deira (3.1).}
+    \prop{7.21}{t}{Vekta åleine seier ingenting om denne skalaen, sidan vekt berre tel kjeder (3.1) og ikkje vel mellom dei. To agentar kan gje same forklaring på ein konfigurasjon og likevel vurdere han motsett, ut frå ulikt valde skalaer.}
+  \prop{7.3}{d}{\textbf{Mynde} er retten ein agent har til å gjere si eiga vurdering bindande for kva konfigurasjonar andre agentar må eller kan framstille.}
+    \prop{7.31}{t}{Mynde følgjer verken av rett forklaring (7.1) eller av ei bestemt vurdering (7.2): dei tre er uavhengig definerte, og ingen av dei to første inneheld den tredje.}
+    \prop{7.32}{o}{Mynde oppstår i praksis av tilhøve mellom agentar -- avtale, posisjon, styrke -- som ikkje er utrekna frå feltet (2.2) eller vekta (3.1), men verkar på dei utanfrå.}
+  \prop{7.4}{d}{\textbf{Ansvar} er plikta ein agent har til å svare for verknaden (6.5) handlingane hans har på andre agentars rekkevidd eller halden del.}
+    \prop{7.41}{t}{Ansvar føreset at rekkevidda er asymmetrisk: den handlande agenten kunne nå det den påverka ikkje kunne nå for å hindre det (5.2).}
+    \prop{7.42}{t}{Denne asymmetrien gjer ansvar mogleg (7.41); ho gjer det ikkje obligatorisk. Om ho skal utløyse ansvar, er eit spørsmål for vurdering (7.2) og mynde (7.3), ikkje for forklaring (7.1) åleine.}
+
+\flowchapter{8 Spor av avgrensa rekkevidde}{spor av avgrensa rekkevidde}
+\mainprop{8}{}{Sidan kvar agent berre kan bruke formingsreglar innanfor si eiga rekkevidd (5.2), ber ein framstilt konfigurasjon spor av det som låg utanfor.}
+  \prop{8.1}{d}{\textbf{Omhugen} til ein agent er kor jamt formingsreglane hans dekkjer heile rekkevidda, del for del.}
+    \prop{8.11}{t}{Ujamn omhug lèt delar av rekkevidda stå urørte lenger enn andre; desse delane held på avviket sitt (5.1) uendra til noko anna endrar dei.}
+  \prop{8.2}{d}{\textbf{Svikttida} til ein slik urørt del er tida frå framstilling til det tidspunktet der avviket der ikkje lenger kan minskast av dei formingsreglane som var i bruk.}
+    \prop{8.21}{i}{Ei skjøyt som ikkje toler den belastninga ho seinare møter, sviktar i den svikttida som svarar til når belastninga først overstig det skjøyten var forma for.}
+  \prop{8.3}{t}{Ei forklaring (7.1) kan peike ut kva del av rekkevidda som hadde ujamn omhug (8.1). Ho kan ikkje åleine fastslå svikttida (8.2), sidan svikttida også avheng av korleis vekta i feltet held fram med å endre seg (4.1) etter framstillinga -- noko forklaringa for éin framstilt konfigurasjon ikkje femner.}
+    \prop{8.31}{t}{Ei forklaring kan difor vere fullstendig for det som alt er framstilt (7.1), utan å kunne seie føreåt når eit einskild avvik vil vise seg som svikt.}
+
+\flowchapter{9 Grensa for traktaten}{grensa for traktaten}
+\mainprop{9}{}{Denne traktaten er sjølv ein konfigurasjon, framstilt ved at formingsreglar er bytt ut, ledd for ledd, i tidlegare utkast.}
+  \prop{9.1}{t}{Som konfigurasjon (1.2) har han difor vekt (3.1) berre i eit felt av moglege traktatar, og ethvert stabilt punkt han når (3.2), er stabilt berre inntil ein ny konfigurasjon vert framstilt (6.7).}
+  \prop{9.2}{t}{Som forklaring (7.1) kan han vise kva formingsreglar og kva rekkevidd som forma nett denne oppbygginga. Som vurdering (7.2) kan han ikkje, frå innsida, gje den skalaen ein lesar treng for å avgjere om nett denne oppbygginga var den rette å velje: vekta hans fortel berre at han vart nådd, ikkje at han burde vore det.}
+  \prop{9.3}{t}{Han har heller ikkje mynde (7.3) over kva omgrep ein annan agent må bruke om det same feltet: mynde krev tilhøve mellom agentar (7.32) som teksten åleine ikkje kan skipe.}
+  \prop{9.4}{t}{Difor stoggar formingsregelen her: ingen del av det som står, vert bytt ut.}
+```
+
