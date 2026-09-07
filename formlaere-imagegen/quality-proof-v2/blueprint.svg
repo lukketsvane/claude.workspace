@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="512" viewBox="0 0 768 512">
+  <rect width="768" height="512" fill="white"/>
+  <g fill="none" stroke="black" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 322 C125 226 196 164 283 170 C343 174 390 213 412 276 C431 330 461 350 511 346 C579 340 637 293 680 219"/>
+    <path d="M129 317 C158 243 211 198 275 202 C328 205 366 239 384 289"/>
+    <path d="M453 324 C476 276 520 235 572 222 C612 212 647 220 676 246"/>
+    <path d="M175 304 C197 259 230 235 270 237 C304 239 330 259 345 294"/>
+    <path d="M500 308 C519 271 548 249 581 244 C611 240 635 249 655 269"/>
+  </g>
+  <g fill="black">
+    <circle cx="258" cy="228" r="6"/><circle cx="274" cy="220" r="6"/><circle cx="288" cy="231" r="6"/>
+    <circle cx="557" cy="245" r="6"/><circle cx="578" cy="239" r="6"/><circle cx="600" cy="246" r="6"/><circle cx="620" cy="256" r="6"/>
+  </g>
+  <g font-family="Times New Roman, Times, serif" font-size="20" fill="black">
+    <text x="245" y="148">haug</text>
+    <text x="575" y="182">stilart</text>
+  </g>
+</svg>
