@@ -1,17 +1,6 @@
-import crypto from 'node:crypto';
-
-const EXPECTED = 'fb6db9f8ebeed0b2b6b2d91428f40152f3365fdc45ccbd91d3b3121038ad9b4f';
-
 export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-
-    const supplied = String(req.headers['x-astra-key'] || '');
-    const digest = crypto.createHash('sha256').update(supplied).digest('hex');
-    if (digest !== EXPECTED) return res.status(403).json({ error: 'forbidden' });
-
-    const prompt = req.body && req.body.prompt ? String(req.body.prompt) : '';
-    if (!prompt) return res.status(400).json({ error: 'missing_prompt' });
+    if (req.method !== 'GET') return res.status(405).json({ error: 'method_not_allowed' });
 
     const token = process.env.AI_GATEWAY_API_KEY
       || process.env.VERCEL_OIDC_TOKEN
@@ -26,8 +15,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'openai/gpt-6-astra',
-        input: prompt,
-        max_output_tokens: 256
+        input: 'Reply with exactly ASTRA_OK and nothing else.',
+        max_output_tokens: 64
       })
     });
 
