@@ -1,0 +1,184 @@
+name: Astra Literary Benchmark v2
+on:
+  push:
+    paths:
+      - '.github/workflows/astra-literary-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+  copilot-requests: write
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          npm install -g @github/copilot
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+
+      - name: Fetch self-contained source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_RUN: '34120324431'
+        run: |
+          set -euo pipefail
+          artifact_id=""
+          for i in $(seq 1 90); do
+            json=$(curl -fsSL \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/lukketsvane/claude.workspace/actions/runs/$SOURCE_RUN/artifacts") || true
+            artifact_id=$(printf '%s' "$json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((str(a["id"]) for a in d.get("artifacts",[]) if a.get("name")=="astra-tractatus"),""))' 2>/dev/null || true)
+            if [ -n "$artifact_id" ]; then break; fi
+            sleep 20
+          done
+          test -n "$artifact_id"
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/lukketsvane/claude.workspace/actions/artifacts/$artifact_id/zip" \
+            -o source.zip
+          mkdir -p source_artifact
+          unzip -jo source.zip -d source_artifact
+          cp source_artifact/astra-tractatus.tex source.tex
+
+      - name: Fetch Tractatus references
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/german/Logisch-philosophische%20Abhandlung.pdf' -o wittgenstein-de.pdf
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/english/Tractatus%20Logico-Philosophicus%20%28English%29.pdf' -o wittgenstein-en.pdf
+          pdftotext -layout wittgenstein-de.pdf wittgenstein-de.txt
+          pdftotext -layout wittgenstein-en.pdf wittgenstein-en.txt
+
+      - name: Comparative criticism with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          cat astra-literary/prompts/critic.md > critic-input.txt
+          printf '\n\n--- FORMLÆRE ---\n' >> critic-input.txt
+          cat source.tex >> critic-input.txt
+          printf '\n\n--- WITTGENSTEIN ORIGINALTYSK ---\n' >> critic-input.txt
+          cat wittgenstein-de.txt >> critic-input.txt
+          printf '\n\n--- WITTGENSTEIN ENGELSK ---\n' >> critic-input.txt
+          cat wittgenstein-en.txt >> critic-input.txt
+          cat critic-input.txt | copilot --yolo -s | tee literary-critique.md
+          test -s literary-critique.md
+
+      - name: First literary rewrite with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          cat astra-literary/prompts/rewrite.md > rewrite-input.txt
+          printf '\n\n--- KOMPARATIV KRITIKK ---\n' >> rewrite-input.txt
+          cat literary-critique.md >> rewrite-input.txt
+          printf '\n\n--- KJELDEUTKAST ---\n' >> rewrite-input.txt
+          cat source.tex >> rewrite-input.txt
+          printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> rewrite-input.txt
+          cat wittgenstein-de.txt >> rewrite-input.txt
+          cat rewrite-input.txt | copilot --yolo -s | tee candidate-0.tex
+          test -s candidate-0.tex
+
+      - name: Judge and iterate with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          judge_candidate () {
+            local candidate="$1"
+            local judge="$2"
+            cat astra-literary/prompts/judge.md > judge-input.txt
+            printf '\n\n--- KANDIDAT ---\n' >> judge-input.txt
+            cat "$candidate" >> judge-input.txt
+            printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> judge-input.txt
+            cat wittgenstein-de.txt >> judge-input.txt
+            printf '\n\n--- REFERANSE ENGELSK ---\n' >> judge-input.txt
+            cat wittgenstein-en.txt >> judge-input.txt
+            cat judge-input.txt | copilot --yolo -s | tee "$judge"
+            test -s "$judge"
+          }
+
+          judge_candidate candidate-0.tex judge-0.md
+          current='candidate-0.tex'
+          current_judge='judge-0.md'
+
+          for iteration in 1 2 3; do
+            if grep -q '^VERDICT: PASS' "$current_judge"; then
+              break
+            fi
+            next="candidate-${iteration}.tex"
+            next_judge="judge-${iteration}.md"
+            cat astra-literary/prompts/repair.md > repair-input.txt
+            printf '\n\n--- SISTE DOM ---\n' >> repair-input.txt
+            cat "$current_judge" >> repair-input.txt
+            printf '\n\n--- KANDIDAT SOM SKAL REPARERAST ---\n' >> repair-input.txt
+            cat "$current" >> repair-input.txt
+            printf '\n\n--- REFERANSE ORIGINALTYSK ---\n' >> repair-input.txt
+            cat wittgenstein-de.txt >> repair-input.txt
+            cat repair-input.txt | copilot --yolo -s | tee "$next"
+            test -s "$next"
+            judge_candidate "$next" "$next_judge"
+            current="$next"
+            current_judge="$next_judge"
+          done
+
+          cp "$current" final.tex
+          cp "$current_judge" final-judge.md
+          test -s final.tex
+          test -s final-judge.md
+
+      - name: Archive every Astra response in repository
+        run: |
+          set -euo pipefail
+          run_dir="astra-literary/runs/run-${GITHUB_RUN_NUMBER}"
+          latest_dir="astra-literary/latest"
+          mkdir -p "$run_dir" "$latest_dir"
+          cp source.tex "$run_dir/source.tex"
+          cp literary-critique.md "$run_dir/literary-critique.md"
+          cp candidate-*.tex "$run_dir/" 2>/dev/null || true
+          cp judge-*.md "$run_dir/" 2>/dev/null || true
+          cp final.tex "$run_dir/final.tex"
+          cp final-judge.md "$run_dir/final-judge.md"
+          cp final.tex "$latest_dir/final.tex"
+          cp final-judge.md "$latest_dir/final-judge.md"
+          cp literary-critique.md "$latest_dir/literary-critique.md"
+          printf 'workflow_run=%s\ncommit=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "$run_dir/provenance.txt"
+          cp "$run_dir/provenance.txt" "$latest_dir/provenance.txt"
+
+          git config user.name 'astra-literary-bot'
+          git config user.email '41840333+lukketsvane@users.noreply.github.com'
+          git add astra-literary/runs astra-literary/latest
+          if ! git diff --cached --quiet; then
+            git commit -m "archive Astra literary iteration ${GITHUB_RUN_NUMBER}"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload complete literary iteration artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-literary-iteration-v2
+          path: |
+            source.tex
+            literary-critique.md
+            candidate-*.tex
+            judge-*.md
+            final.tex
+            final-judge.md
+          if-no-files-found: warn
