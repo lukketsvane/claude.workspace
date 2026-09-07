@@ -1,0 +1,66 @@
+name: Astra Rewrite Tractatus
+on:
+  push:
+    paths:
+      - '.github/workflows/astra-rewrite-tractatus.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  copilot-requests: write
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+      - name: Fetch current tractatus source
+        run: curl -fsSL https://raw.githubusercontent.com/lukketsvane/FORML-RE/main/traktat/src/proposisjonar.tex -o source.tex
+      - name: Build rewrite prompt
+        run: |
+          cat > prompt.txt <<'PROMPT'
+          Du er logikar, formteoretikar og filosofisk arkitekt. Skriv HEILE kjeldeteksten nedanfor om til eit samanhengande filosofisk verk på presist, naturleg nynorsk.
+
+          Ambisjonen er den same kjensla av nødvendighet, kompresjon, klarleik, rytme og arkitektonisk oppbygging som i Wittgensteins Tractatus Logico-Philosophicus, men utan å kopiere formuleringar eller lage pastisj. Målet er ikkje å høyrest wittgensteinsk ut. Målet er at kvar proposisjon skal verke nødvendig, stå på rett stad, og vere eit faktisk ledd i eit system.
+
+          Rekonstruer argumentets indre maskineri. Les heile teksten som eitt system før du skriv. Finn dei primitive omgrepa, definisjonane, postulata, dei reelle teorema, observasjonane, illustrasjonane, overlapp, manglande mellomledd og eventuelle motseiingar. Ikkje vis denne analysen. Bruk han til å byggje teksten på nytt.
+
+          Du har lov til å flytte, slå saman, dele, skrive nye mellomledd, fjerne svake delar, endre klassifikasjon og nummerering, skjerpe definisjonar og rekonstruere heile rekkjefølgja. Ver lojal mot den sterkaste teorien latent i materialet, ikkje mot ordlyden.
+
+          Hald systemet d = definisjon, a = postulat, t = teorem, o = observasjon, i = illustrasjon, men klassifiser strengt. Eit teorem må faktisk følgje frå tidlegare proposisjonar. Eit postulat er noko systemet treng men ikkje kan utleie. Ein observasjon er empirisk eller motiverande, ikkje logisk nødvendig. Ein definisjon fastset bruk. Ei illustrasjon er berre eit døme.
+
+          Bygg nummereringa hierarkisk slik at 1 er eit verkeleg grunnledd; 1.1, 1.2 osv. utfaldar det; 1.11 osv. er presiseringar eller konsekvensar. Eit nytt hovudtal skal berre kome når eit nytt hovudledd er nødvendig. Nummereringa skal uttrykkje slektskap, ikkje berre rekkjefølgje.
+
+          Språkkrav: kort, hardt, enkelt, nøkternt, presist. Ingen akademisk fyll. Ingen falsk mystikk. Ingen retoriske spørsmål. Ingen overgangsprosa som berre bind saman. Ingen setning skal stå berre fordi ho høyrest klok ut. Føretrekk vanlege ord. La nokre avgjerande proposisjonar vere svært korte; la andre få to eller tre setningar når utleiinga krev det.
+
+          Teorien skal fungere som eit operativt fundament for design og formdanning: beskrive form; skilje moglege frå realiserte konfigurasjonar; generere hypotesar; samanlikne alternativ; forklare val; undersøkje relasjonar mellom avgrensing, val og konsekvens; teste påstandar; peike ut uvissa; og knyte form til materiale, produksjon, bruk, persepsjon og situasjon utan å redusere form til nokon av dei.
+
+          Ver særleg streng med omgrepa form, objekt, ting, konfigurasjon, mogleg, realisert, regel, avgrensing, val, relasjon, transformasjon, rom, materiale, funksjon, intensjon og forklaring. Ingen av dei får vere diffuse.
+
+          Test stille kvar proposisjon: Kva ville gjort henne falsk? Er ho analytisk, empirisk eller postulert? Følgjer ho frå det som står før? Treng systemet henne? Brukar ho omgrep som enno ikkje er etablerte? Kan ho seiast enklare? Er ho berre repetisjon? Opnar ho for faktisk undersøking eller formarbeid? Omskriv, flytt eller fjern alt som ikkje held.
+
+          Bruk ekstra mykje arbeid på dei første 10–20 proposisjonane. Opninga må etablere nesten alt resten kan vekse frå. Ikkje aksepter eksisterande opning automatisk. Finn den sterkaste moglege første proposisjonen.
+
+          Slutten må vise grensene for systemet: kva teorien kan avgjere, kva ho berre kan strukturere, kva som må prøvast i materiale eller handling, og kva ho ikkje kan avgjere åleine. Slutten skal kaste nytt lys bakover på starten.
+
+          Etter første omskriving, gå gjennom heile teksten ein gong til og fjern redundans, banalitetar, falske teorem, unødvendige omgrep, overgangsprosa og metaforar som svekkjer presisjonen. Kontroller inferenskjedene frå første til siste proposisjon.
+
+          OUTPUTKRAV: Gi berre det fullstendige, ferdige traktatmanuskriptet. Ingen føreord. Ingen kommentar til endringane. Ingen analyse. Ingen samandrag. Ingen samanlikning med Wittgenstein. Behald LaTeX-makroformatet for proposisjonar dersom det let seg gjere: \mainprop{...}{...}{...} og \prop{...}{...}{...}. Lever heile teksten, ikkje eit utdrag.
+
+          KJELDEMANUSKRIPT:
+          PROMPT
+          cat source.tex >> prompt.txt
+      - name: Rewrite with GPT-6 Astra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          copilot --yolo --model=gpt-6-astra --reasoning-effort=xhigh --no-ask-user --disable-builtin-mcps -p "$(cat prompt.txt)" | tee astra-tractatus.tex
+      - name: Upload rewritten tractatus
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-tractatus
+          path: astra-tractatus.tex
+          if-no-files-found: error
