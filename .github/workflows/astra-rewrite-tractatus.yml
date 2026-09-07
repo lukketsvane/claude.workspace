@@ -54,9 +54,11 @@ jobs:
       - name: Rewrite with GPT-6 Astra
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
         run: |
           set -o pipefail
-          copilot --yolo --model=gpt-6-astra --reasoning-effort=xhigh --no-ask-user --disable-builtin-mcps -p "$(cat prompt.txt)" | tee astra-tractatus.tex
+          copilot --yolo -p "$(cat prompt.txt)" | tee astra-tractatus.tex
       - name: Upload rewritten tractatus
         if: always()
         uses: actions/upload-artifact@v4
