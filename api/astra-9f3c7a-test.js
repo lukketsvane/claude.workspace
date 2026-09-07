@@ -1,10 +1,11 @@
 module.exports = async function handler(req, res) {
-  const token = process.env.VERCEL_OIDC_TOKEN;
-  if (!token) {
-    return res.status(500).json({ ok: false, error: 'VERCEL_OIDC_TOKEN unavailable' });
-  }
-
   try {
+    const { getVercelOidcToken } = await import('@vercel/oidc');
+    const token = await getVercelOidcToken();
+    if (!token) {
+      return res.status(500).json({ ok: false, error: 'getVercelOidcToken() returned no token' });
+    }
+
     const r = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
       method: 'POST',
       headers: {
