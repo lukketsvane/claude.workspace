@@ -1,0 +1,230 @@
+name: Astra Literary Benchmark
+on:
+  push:
+    paths:
+      - '.github/workflows/astra-literary-benchmark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  copilot-requests: write
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install tools
+        run: |
+          npm install -g @github/copilot
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+
+      - name: Wait for adversarial source and fetch it
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_RUN: '34120324431'
+        run: |
+          set -euo pipefail
+          artifact_id=""
+          for i in $(seq 1 90); do
+            json=$(curl -fsSL \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/lukketsvane/claude.workspace/actions/runs/$SOURCE_RUN/artifacts") || true
+            artifact_id=$(printf '%s' "$json" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((str(a["id"]) for a in d.get("artifacts",[]) if a.get("name")=="astra-tractatus"),""))' 2>/dev/null || true)
+            if [ -n "$artifact_id" ]; then break; fi
+            sleep 20
+          done
+          test -n "$artifact_id"
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/lukketsvane/claude.workspace/actions/artifacts/$artifact_id/zip" \
+            -o source.zip
+          unzip -j source.zip -d source_artifact
+          cp source_artifact/astra-tractatus.tex source.tex
+
+      - name: Fetch public-domain Tractatus references
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/german/Logisch-philosophische%20Abhandlung.pdf' -o wittgenstein-de.pdf
+          curl -fsSL 'https://books.wittgensteinproject.org/pdf/english/Tractatus%20Logico-Philosophicus%20%28English%29.pdf' -o wittgenstein-en.pdf
+          pdftotext -layout wittgenstein-de.pdf wittgenstein-de.txt
+          pdftotext -layout wittgenstein-en.pdf wittgenstein-en.txt
+
+      - name: Comparative literary and architectural criticism
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          cat > critic-prompt.txt <<'PROMPT'
+          Du er ein ekstremt streng litterær redaktør, logikar og filosof. Du skal samanlikne FORMLÆRE-traktaten med Wittgensteins Tractatus Logico-Philosophicus som TO HEILE LITTERÆRE OG ARKITEKTONISKE VERK.
+
+          Du får originaltysk og den tidlege engelske omsetjinga av Tractatus som referanse. Dei er ikkje ein stilmal som skal kopierast. Ikkje lån formuleringar, metaforar, setningsmønster eller karakteristiske avslutningar. Sammenlikninga skal finne kva Wittgenstein faktisk oppnår som vår tekst enno ikkje oppnår.
+
+          Ignorer at Wittgenstein brukar matematisk/logisk formalisme. Vår tekst skal framleis vere sjølvberande og utan importert matematikk. Vurder berre eigenskapar som kan overførast utan pastisj:
+          - arkitektonisk nødvendighet
+          - om kvar proposisjon fortener akkurat sin plass
+          - kompresjon: kor mykje tankearbeid kvar setning gjer
+          - rytme mellom korte slag og lengre utleiingar
+          - presisjon utan forklaringsprosa
+          - overgangar som kjennest uunngåelege
+          - meiningsfull bruk av desimalhierarkiet
+          - evna til å introdusere få primitive omgrep og få mykje ut av dei
+          - fravær av redundans
+          - minneverdigheit utan poesi for poesiens skuld
+          - motet til å stoppe når noko er sagt
+          - heilskap mellom første og siste proposisjon
+          - litterær autoritet utan autoritetsmarkørar
+          - sjølvstende: teksten må vere vår eigen, ikkje wittgensteinsk etterlikning
+
+          Vurder Tractatus og FORMLÆRE kvar for seg på 0–10 på desse aksane. Deretter identifiser dei 25 mest konkrete stadene eller mønstera der FORMLÆRE taper. For kvart punkt: forklar kva som er svakt, kva funksjon det skulle hatt, og kva slags kirurgisk endring som vil gjere teksten sterkare.
+
+          Ver særleg nådelaus mot: falske teorem, overforklaring, tematiske hopp forkledd som hierarki, nye omgrep som ikkje tener resten, generaliseringar som ikkje følgjer, og kapittel som er interessante men ikkje nødvendige for fundamentet.
+
+          IKKJE skriv ny traktat i dette passet. IKKJE siter lange passasjar frå Wittgenstein. Dette er diagnose.
+
+          --- FORMLÆRE ---
+          PROMPT
+          cat source.tex >> critic-prompt.txt
+          printf '\n--- WITTGENSTEIN ORIGINALTYSK ---\n' >> critic-prompt.txt
+          cat wittgenstein-de.txt >> critic-prompt.txt
+          printf '\n--- WITTGENSTEIN ENGELSK ---\n' >> critic-prompt.txt
+          cat wittgenstein-en.txt >> critic-prompt.txt
+          copilot --yolo -p "$(cat critic-prompt.txt)" | tee literary-critique.md
+
+      - name: Rewrite from comparative criticism
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          cat > rewrite-prompt.txt <<'PROMPT'
+          Skriv HEILE FORMLÆRE-traktaten på nytt etter den komparative kritikken nedanfor.
+
+          Målet er ikkje å likne Wittgenstein. Målet er at teksten som EIGE litterært og filosofisk verk skal ha minst same grad av arkitektonisk nødvendighet, kompresjon, setningskraft, rytme, hierarkisk presisjon og heilskap som Tractatus.
+
+          FORBOD:
+          - ingen kopierte eller tett parafraserte Wittgenstein-formuleringar
+          - ingen pastisj av karakteristiske vendingar
+          - ingen importert matematikk, symbolsk logikk, mengdelære, topologi, variablar, sannsynsmål eller likningar
+          - ingen namn-dropping eller litteraturhistorie i sjølve traktaten
+          - ingen ny term berre for å verke presis
+
+          KRAV:
+          - få primitive omgrep; maksimal forklaringskraft per omgrep
+          - kvar proposisjon N+1 skal ha ein presis grunn til å kome etter N
+          - kvart teorem skal verkeleg følgje frå tidlegare premiss; elles omklassifiser eller fjern
+          - nummerhierarkiet skal vere eit reelt avhengnadstre
+          - to ASCII-mellomrom per hierarkinivå framfor kvar \\prop-linje
+          - forklaring, vurdering og autoritet skal ikkje blandast
+          - teorien skal vise grensene sine utan å opne ein diffus restkategori
+          - alt viktig språk skal vere forståeleg innanfrå boka sjølv
+          - ingen setning får overleve berre fordi ho er vakker
+          - likevel skal verket ha rytme, stillheit, trykk og minneverdigheit som litteratur
+          - opninga skal gjere resten mogleg; slutten skal få opninga til å sjå annleis ut
+
+          Etter første utkast: gjennomfør internt ein lineær N→N+1-kontroll, ein parent→child-kontroll, eit parsimonipass og eit litterært rytmepass. Output berre endeleg full tekst i eksisterande LaTeX-makroformat.
+
+          --- KOMPARATIV KRITIKK ---
+          PROMPT
+          cat literary-critique.md >> rewrite-prompt.txt
+          printf '\n--- KJELDEUTKAST ---\n' >> rewrite-prompt.txt
+          cat source.tex >> rewrite-prompt.txt
+          printf '\n--- REFERANSE: WITTGENSTEIN ORIGINALTYSK ---\n' >> rewrite-prompt.txt
+          cat wittgenstein-de.txt >> rewrite-prompt.txt
+          copilot --yolo -p "$(cat rewrite-prompt.txt)" | tee candidate.tex
+
+      - name: Blind-strength judge against Tractatus
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          cat > judge-prompt.txt <<'PROMPT'
+          Du er ein nådelaus komparativ dommar. Vurder kandidatverket mot Wittgensteins Tractatus på litterær og arkitektonisk kvalitet, men IKKJE på matematisk/logisk formalisme og IKKJE på historisk innverknad.
+
+          PASS skal berre givast dersom kandidaten etter di vurdering er minst på nivå med referanseverket på ALLE desse aksane som er relevante for sitt eige prosjekt:
+          1 arkitektonisk nødvendighet
+          2 inferensiell kontinuitet
+          3 kompresjon
+          4 setningskraft
+          5 rytme
+          6 ikkje-redundans
+          7 meiningsfullt hierarki
+          8 parsimonisk omgrepsapparat
+          9 heilskap frå opning til slutt
+          10 litterær minneverdigheit
+          11 sjølvberande presisjon
+          12 originalitet / ingen pastisj
+
+          Fyrste linje MÅ vere nøyaktig VERDICT: PASS eller VERDICT: FAIL.
+          Deretter: score kandidat og referanse 0–10 på kvar akse. Dersom FAIL, gi ei kort, kirurgisk reparasjonsliste prioritert etter kva som held kandidaten tilbake. Ikkje omskriv teksten i dette passet. Ikkje siter lange passasjar frå referansen.
+
+          --- KANDIDAT ---
+          PROMPT
+          cat candidate.tex >> judge-prompt.txt
+          printf '\n--- REFERANSE ORIGINALTYSK ---\n' >> judge-prompt.txt
+          cat wittgenstein-de.txt >> judge-prompt.txt
+          printf '\n--- REFERANSE ENGELSK ---\n' >> judge-prompt.txt
+          cat wittgenstein-en.txt >> judge-prompt.txt
+          copilot --yolo -p "$(cat judge-prompt.txt)" | tee judge-1.md
+
+      - name: Repair if judge fails
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COPILOT_MODEL: gpt-6-astra
+          COPILOT_ALLOW_ALL: 'true'
+        run: |
+          set -euo pipefail
+          cp candidate.tex final.tex
+          cp judge-1.md final-judge.md
+          if grep -q '^VERDICT: PASS' judge-1.md; then
+            exit 0
+          fi
+          cat > repair-prompt.txt <<'PROMPT'
+          Kandidaten nedanfor vart vurdert som svakare enn Tractatus på minst éin litterær/arkitektonisk akse. Reparer HEILE teksten, ikkje berre dei nemnde setningane.
+
+          Bruk dommen som kravspesifikasjon. Iterer internt: kritiser → omskriv → les lineært → komprimer → kontroller hierarki → samanlikn igjen. Stopp ikkje internt før du meiner teksten kan slå eller matche referansen på alle relevante aksar.
+
+          Framleis absolutt: ingen Wittgenstein-pastisj, ingen kopierte formuleringar, ingen importert matematisk formalisme. Verket skal vere sjølvstendig nynorsk litteratur og eit operativt fundament for formteori.
+
+          Output berre fullstendig ferdig LaTeX-traktat.
+
+          --- DOM ---
+          PROMPT
+          cat judge-1.md >> repair-prompt.txt
+          printf '\n--- KANDIDAT ---\n' >> repair-prompt.txt
+          cat candidate.tex >> repair-prompt.txt
+          printf '\n--- REFERANSE ORIGINALTYSK ---\n' >> repair-prompt.txt
+          cat wittgenstein-de.txt >> repair-prompt.txt
+          copilot --yolo -p "$(cat repair-prompt.txt)" | tee final.tex
+
+          cat > judge2-prompt.txt <<'PROMPT'
+          Gjer ein siste streng komparativ dom av kandidaten mot Tractatus på dei same 12 aksane: arkitektonisk nødvendighet, inferensiell kontinuitet, kompresjon, setningskraft, rytme, ikkje-redundans, hierarki, parsimonisk omgrepsapparat, heilskap, minneverdigheit, sjølvberande presisjon og originalitet. Ikkje vurder matematisk formalisme eller historisk status. Fyrste linje: VERDICT: PASS eller VERDICT: FAIL. PASS berre dersom kandidaten minst matcher referansen på kvar relevant akse. Deretter korte scores og dei siste restsvakheitene.
+
+          --- KANDIDAT ---
+          PROMPT
+          cat final.tex >> judge2-prompt.txt
+          printf '\n--- REFERANSE ORIGINALTYSK ---\n' >> judge2-prompt.txt
+          cat wittgenstein-de.txt >> judge2-prompt.txt
+          copilot --yolo -p "$(cat judge2-prompt.txt)" | tee final-judge.md
+
+      - name: Upload literary iteration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-literary-iteration
+          path: |
+            source.tex
+            literary-critique.md
+            candidate.tex
+            judge-1.md
+            final.tex
+            final-judge.md
+          if-no-files-found: error
