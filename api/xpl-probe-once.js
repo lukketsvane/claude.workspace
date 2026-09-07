@@ -5,7 +5,7 @@ module.exports = async function handler(req, res) {
   try {
     const email = String(req.query.email || '').trim().toLowerCase();
     const digest = crypto.createHash('sha256').update(email).digest('hex');
-    if (digest !== 'd90bc22e6f06e8300d50c4a0daf0eeab65e50810f36d39506179f69a4bfc1c98') {
+    if (digest !== '2d1269fc5f977e7763982a2c99127020a7fd6dc378cf1962a52dd4103790ed7f') {
       return res.status(403).json({ ok:false, error:'not authorized' });
     }
 
