@@ -1,0 +1,56 @@
+name: FORMLAERE FLUX image proof
+on:
+  push:
+    branches: [imagegen-figures-20260907]
+    paths: ['.github/workflows/formlaere-flux-proof.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      OPENBLAS_NUM_THREADS: '4'
+      OMP_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: imagegen-figures-20260907
+          persist-credentials: false
+      - name: Build pinned open image inference engine
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libopenblas-dev
+          git clone https://github.com/antirez/iris.c.git /tmp/iris
+          git -C /tmp/iris checkout 9873887d4aa0646c650adc5b86b986d2f653b7e0
+          make -C /tmp/iris blas
+      - name: Download public FLUX.2 Klein 4B weights
+        working-directory: /tmp/iris
+        run: timeout 1200 bash download_model.sh 4b
+      - name: Generate original figure with the diffusion model
+        working-directory: /tmp/iris
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/formlaere-imagegen/flux-proof"
+          ./iris -d flux-klein-4b -W 768 -H 512 -s 4 -S 260907 \
+            -p "An exquisite spare black ink conceptual illustration for a philosophical treatise on form. Pure white background, no paper texture. A single elegantly drawn topographic field with two adjacent hills seen obliquely from above, expressed only through delicate flowing black contour lines. The left hill is narrow and steep, with a small tight cluster of black points near its summit. The right hill is broad and gently sloped, with a looser group of points near its summit. Deep generous white space surrounds the drawing. Austere classical mathematical book illustration, controlled line weight, visually lucid and beautiful. Exactly one coherent figure. No text, no labels, no numbers, no frame, no colour, no grey shading, no photographic landscape, no sky, no axes." \
+            -o "$GITHUB_WORKSPACE/formlaere-imagegen/flux-proof/04_haug_og_stilart.png"
+          printf 'model=black-forest-labs/FLUX.2-klein-4B\nengine=antirez/iris.c\nengine_commit=9873887d4aa0646c650adc5b86b986d2f653b7e0\nseed=260907\nsteps=4\nsize=768x512\nstatus=unreviewed\nrun=%s\n' "$GITHUB_RUN_ID" > "$GITHUB_WORKSPACE/formlaere-imagegen/flux-proof/provenance.txt"
+      - name: Upload the actual generated image
+        uses: actions/upload-artifact@v4
+        with:
+          name: formlaere-flux-actual-image-proof
+          path: formlaere-imagegen/flux-proof/
+          if-no-files-found: error
+      - name: Preserve proof on the image branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'formlaere-image-bot'
+          git config user.email '41840333+lukketsvane@users.noreply.github.com'
+          git add formlaere-imagegen/flux-proof
+          git commit -m 'Preserve actual FLUX generated figure proof for review'
+          git -c credential.helper='!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f' push origin HEAD:imagegen-figures-20260907
