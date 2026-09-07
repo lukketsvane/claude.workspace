@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Astra Puter probe</title>
+<pre id="out">STARTING</pre>
+<script src="https://js.puter.com/v2/"></script>
+<script>
+(async () => {
+  const out = document.getElementById('out');
+  try {
+    const r = await puter.ai.chat('Reply with exactly ASTRA_OK and nothing else.', { model: 'openai/gpt-6-astra' });
+    let text = '';
+    if (typeof r === 'string') text = r;
+    else if (r && typeof r.message?.content === 'string') text = r.message.content;
+    else if (r && typeof r.toString === 'function') text = r.toString();
+    out.textContent = 'SUCCESS\n' + text + '\nRAW\n' + JSON.stringify(r, null, 2);
+  } catch (e) {
+    out.textContent = 'ERROR\n' + (e && (e.stack || e.message) || String(e)) + '\nRAW\n' + (() => { try { return JSON.stringify(e, null, 2) } catch (_) { return String(e) } })();
+  }
+})();
+</script>
